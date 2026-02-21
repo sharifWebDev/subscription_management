@@ -12,13 +12,13 @@ class PaymentGateway extends Model
     protected $table = 'payment_gateways';
 
     protected $fillable = ['name', 'code', 'type', 'is_active', 'is_test_mode', 'supports_recurring',
-     'supports_refunds', 'supports_installments', 'api_key', 'api_secret', 'webhook_secret', 'merchant_id',
-     'store_id', 'store_password', 'base_url', 'callback_url', 'webhook_url', 'supported_currencies',
-     'supported_countries', 'excluded_countries', 'percentage_fee', 'fixed_fee', 'fee_currency',
-      'fee_structure', 'config', 'metadata', 'settlement_days', 'refund_days', 'min_amount', 'max_amount',
-      'created_by', 'updated_by'];
+        'supports_refunds', 'supports_installments', 'api_key', 'api_secret', 'webhook_secret', 'merchant_id',
+        'store_id', 'store_password', 'base_url', 'callback_url', 'webhook_url', 'supported_currencies',
+        'supported_countries', 'excluded_countries', 'percentage_fee', 'fixed_fee', 'fee_currency',
+        'fee_structure', 'config', 'metadata', 'settlement_days', 'refund_days', 'min_amount', 'max_amount',
+        'created_by', 'updated_by'];
 
-   //cast
+    // cast
     protected $casts = [
         'is_active' => 'boolean',
         'is_test_mode' => 'boolean',

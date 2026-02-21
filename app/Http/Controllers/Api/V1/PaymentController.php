@@ -186,4 +186,24 @@ class PaymentController extends Controller
             return error('Payments delete failed!.');
         }
     }
+
+    // getMethods
+    public function getMethods(): JsonResponse
+    {
+        return success('Methods retrieved successfully', $this->paymentService->getMethods());
+    }
+
+    // addMethod
+    public function addMethod(Request $request): JsonResponse
+    {
+        $data = $request->all();
+
+        return success('Methods added successfully', $this->paymentService->addMethod($data));
+    }
+
+    // removeMethod
+    public function removeMethod(int $id): JsonResponse
+    {
+        return success('Methods removed successfully', $this->paymentService->removeMethod($id));
+    }
 }

@@ -21,7 +21,7 @@ return new class extends Migration
             $table->decimal('tier_quantity', 20, 8)->nullable();
             $table->decimal('amount', 20, 8)->nullable();
             $table->string('unit', 50);
-            $table->enum('status', ['pending', 'billed', 'void', 'disputed'])->default('pending')-
+            $table->enum('status', ['pending', 'billed', 'void', 'disputed'])->default('pending') -
             $table->timestamp('recorded_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->date('billing_date');
             $table->json('metadata')->nullable();

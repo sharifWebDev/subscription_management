@@ -12,9 +12,9 @@ class SubscriptionItem extends Model
     protected $table = 'subscription_items';
 
     protected $fillable = ['subscription_id', 'plan_price_id', 'feature_id', 'quantity', 'unit_price', 'amount',
-     'metadata', 'tiers', 'effective_from', 'effective_to', 'created_by', 'updated_by'];
+        'metadata', 'tiers', 'effective_from', 'effective_to', 'created_by', 'updated_by'];
 
-   //cast
+    // cast
     protected $casts = [
         'effective_from' => 'datetime',
         'effective_to' => 'datetime',

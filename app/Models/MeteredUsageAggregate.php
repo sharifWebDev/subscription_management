@@ -12,15 +12,15 @@ class MeteredUsageAggregate extends Model
     protected $table = 'metered_usage_aggregates';
 
     protected $fillable = ['subscription_id', 'feature_id', 'aggregate_date', 'aggregate_period', 'total_quantity',
-     'tier1_quantity', 'tier2_quantity', 'tier3_quantity', 'total_amount', 'record_count', 'last_calculated_at',
-      'created_by', 'updated_by'];
+        'tier1_quantity', 'tier2_quantity', 'tier3_quantity', 'total_amount', 'record_count', 'last_calculated_at',
+        'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'aggregate_date' => 'datetime',
         'last_calculated_at' => 'datetime',
         'subscription_id' => 'integer',
-        'feature_id' => 'integer',  
+        'feature_id' => 'integer',
         'created_by' => 'integer',
         'updated_by' => 'integer',
         'created_at' => 'datetime',

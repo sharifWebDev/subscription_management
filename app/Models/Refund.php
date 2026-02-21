@@ -12,12 +12,12 @@ class Refund extends Model
     protected $table = 'refunds';
 
     protected $fillable = ['payment_master_id', 'payment_transaction_id', 'user_id', 'refund_number', 'type',
-    'status', 'initiated_by', 'amount', 'fee', 'net_amount', 'currency', 'exchange_rate', 'reason', 'reason_details',
-     'customer_comments', 'requested_at', 'approved_at', 'approved_by', 'processed_at', 'completed_at', 'failed_at',
-     'gateway_refund_id', 'gateway_response', 'metadata', 'documents', 'processed_by', 'rejection_reason',
-      'created_by', 'updated_by'];
+        'status', 'initiated_by', 'amount', 'fee', 'net_amount', 'currency', 'exchange_rate', 'reason', 'reason_details',
+        'customer_comments', 'requested_at', 'approved_at', 'approved_by', 'processed_at', 'completed_at', 'failed_at',
+        'gateway_refund_id', 'gateway_response', 'metadata', 'documents', 'processed_by', 'rejection_reason',
+        'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'amount' => 'float',
         'fee' => 'float',

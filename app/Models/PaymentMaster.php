@@ -12,13 +12,13 @@ class PaymentMaster extends Model
     protected $table = 'payment_masters';
 
     protected $fillable = ['user_id', 'payment_number', 'type', 'status', 'total_amount', 'subtotal', 'tax_amount',
-    'discount_amount', 'fee_amount', 'net_amount', 'paid_amount', 'due_amount', 'currency', 'exchange_rate',
-     'base_currency', 'base_amount', 'payment_method', 'payment_method_details', 'payment_gateway',
-      'is_installment', 'installment_count', 'installment_frequency', 'payment_date', 'due_date', 'paid_at',
-      'cancelled_at', 'expires_at', 'customer_reference', 'bank_reference', 'gateway_reference', 'metadata',
-       'custom_fields', 'notes', 'failure_reason', 'created_by', 'updated_by'];
+        'discount_amount', 'fee_amount', 'net_amount', 'paid_amount', 'due_amount', 'currency', 'exchange_rate',
+        'base_currency', 'base_amount', 'payment_method', 'payment_method_details', 'payment_gateway',
+        'is_installment', 'installment_count', 'installment_frequency', 'payment_date', 'due_date', 'paid_at',
+        'cancelled_at', 'expires_at', 'customer_reference', 'bank_reference', 'gateway_reference', 'metadata',
+        'custom_fields', 'notes', 'failure_reason', 'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'user_id' => 'integer',
         'payment_number' => 'string',

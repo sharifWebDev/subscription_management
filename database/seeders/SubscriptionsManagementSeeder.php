@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
+use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Carbon\Carbon;
 
 class SubscriptionsManagementSeeder extends Seeder
 {
@@ -112,7 +112,7 @@ class SubscriptionsManagementSeeder extends Seeder
             'payment_allocations',
             'refunds',
             'rate_limits',
-            'payment_webhook_logs'
+            'payment_webhook_logs',
         ];
 
         foreach ($tables as $table) {
@@ -192,14 +192,14 @@ class SubscriptionsManagementSeeder extends Seeder
                     'city' => 'New York',
                     'state' => 'NY',
                     'postal_code' => '10001',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'shipping_address' => json_encode([
                     'line1' => '123 Main St',
                     'city' => 'New York',
                     'state' => 'NY',
                     'postal_code' => '10001',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'preferred_currency' => 'USD',
                 'preferred_payment_method' => 'card',
@@ -232,14 +232,14 @@ class SubscriptionsManagementSeeder extends Seeder
                     'city' => 'San Francisco',
                     'state' => 'CA',
                     'postal_code' => '94105',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'shipping_address' => json_encode([
                     'line1' => '456 Business Ave',
                     'city' => 'San Francisco',
                     'state' => 'CA',
                     'postal_code' => '94105',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'preferred_currency' => 'USD',
                 'preferred_payment_method' => 'card',
@@ -272,14 +272,14 @@ class SubscriptionsManagementSeeder extends Seeder
                     'city' => 'Austin',
                     'state' => 'TX',
                     'postal_code' => '78701',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'shipping_address' => json_encode([
                     'line1' => '789 Oak St',
                     'city' => 'Austin',
                     'state' => 'TX',
                     'postal_code' => '78701',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'preferred_currency' => 'USD',
                 'preferred_payment_method' => 'paypal',
@@ -312,14 +312,14 @@ class SubscriptionsManagementSeeder extends Seeder
                     'city' => 'Chicago',
                     'state' => 'IL',
                     'postal_code' => '60601',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'shipping_address' => json_encode([
                     'line1' => '321 Corporate Blvd',
                     'city' => 'Chicago',
                     'state' => 'IL',
                     'postal_code' => '60601',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'preferred_currency' => 'USD',
                 'preferred_payment_method' => 'bank_transfer',
@@ -352,14 +352,14 @@ class SubscriptionsManagementSeeder extends Seeder
                     'city' => 'Seattle',
                     'state' => 'WA',
                     'postal_code' => '98101',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'shipping_address' => json_encode([
                     'line1' => '555 Tech Park',
                     'city' => 'Seattle',
                     'state' => 'WA',
                     'postal_code' => '98101',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'preferred_currency' => 'USD',
                 'preferred_payment_method' => 'card',
@@ -392,14 +392,14 @@ class SubscriptionsManagementSeeder extends Seeder
                     'city' => 'Miami',
                     'state' => 'FL',
                     'postal_code' => '33101',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'shipping_address' => json_encode([
                     'line1' => '777 Beach Ave',
                     'city' => 'Miami',
                     'state' => 'FL',
                     'postal_code' => '33101',
-                    'country' => 'US'
+                    'country' => 'US',
                 ]),
                 'preferred_currency' => 'USD',
                 'preferred_payment_method' => 'card',
@@ -579,7 +579,7 @@ class SubscriptionsManagementSeeder extends Seeder
             $id = DB::table('features')->insertGetId($feature);
 
             // Map by code
-            $ids['feature_' . $feature['code']] = $id;
+            $ids['feature_'.$feature['code']] = $id;
         }
     }
 
@@ -619,7 +619,7 @@ class SubscriptionsManagementSeeder extends Seeder
                     'international' => ['percentage' => 3.9, 'fixed' => 0.30],
                 ]),
                 'config' => json_encode([
-                    'webhook_secret' => 'whsec_' . Str::random(24),
+                    'webhook_secret' => 'whsec_'.Str::random(24),
                     'api_version' => '2023-10-16',
                 ]),
                 'metadata' => null,
@@ -662,8 +662,8 @@ class SubscriptionsManagementSeeder extends Seeder
                     'international' => ['percentage' => 4.99, 'fixed' => 0.49],
                 ]),
                 'config' => json_encode([
-                    'client_id' => 'AYjZ_' . Str::random(32),
-                    'webhook_id' => 'WH_' . Str::random(12),
+                    'client_id' => 'AYjZ_'.Str::random(32),
+                    'webhook_id' => 'WH_'.Str::random(12),
                 ]),
                 'metadata' => null,
                 'settlement_days' => 2,
@@ -908,7 +908,7 @@ class SubscriptionsManagementSeeder extends Seeder
 
         foreach ($gateways as $gateway) {
             $id = DB::table('payment_gateways')->insertGetId($gateway);
-            $ids['gateway_' . $gateway['code']] = $id;
+            $ids['gateway_'.$gateway['code']] = $id;
         }
     }
 
@@ -1056,90 +1056,90 @@ class SubscriptionsManagementSeeder extends Seeder
 
         foreach ($plans as $plan) {
             $id = DB::table('plans')->insertGetId($plan);
-            $ids['plan_' . strtolower(str_replace('-', '_', $plan['slug']))] = $id;
+            $ids['plan_'.strtolower(str_replace('-', '_', $plan['slug']))] = $id;
         }
     }
 
     /**
      * Seed plan_features table
      */
-/**
- * Seed plan_features table
- */
+    /**
+     * Seed plan_features table
+     */
+    private function seedPlanFeatures(array $ids): void
+    {
+        // WARNING: This will delete all existing plan_features data
+        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        DB::table('plan_features')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
-private function seedPlanFeatures(array $ids): void
-{
-    // WARNING: This will delete all existing plan_features data
-    DB::statement('SET FOREIGN_KEY_CHECKS=0');
-    DB::table('plan_features')->truncate();
-    DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        $now = Carbon::now();
 
-    $now = Carbon::now();
+        // Get all plan IDs
+        $plans = DB::table('plans')->get();
 
-    // Get all plan IDs
-    $plans = DB::table('plans')->get();
+        // Get all features
+        $features = DB::table('features')->get();
 
-    // Get all features
-    $features = DB::table('features')->get();
+        $planFeatures = [];
+        $sortOrder = 1;
 
-    $planFeatures = [];
-    $sortOrder = 1;
+        foreach ($plans as $plan) {
+            foreach ($features as $feature) {
+                $value = $this->getFeatureValueForPlan($plan->code, $feature->code);
 
-    foreach ($plans as $plan) {
-        foreach ($features as $feature) {
-            $value = $this->getFeatureValueForPlan($plan->code, $feature->code);
+                if ($value === null) {
+                    continue;
+                }
 
-            if ($value === null) {
-                continue;
+                $planFeatures[] = [
+                    'plan_id' => $plan->id,
+                    'feature_id' => $feature->id,
+                    'value' => $value,
+                    'config' => json_encode(['enabled' => true, 'rollover' => false]),
+                    'sort_order' => $sortOrder++,
+                    'is_inherited' => false,
+                    'parent_feature_id' => null,
+                    'effective_from' => $now,
+                    'effective_to' => null,
+                    'created_by' => null,
+                    'updated_by' => null,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                    'deleted_at' => null,
+                ];
             }
+        }
 
+        // Add historical record
+        $starterPlan = DB::table('plans')->where('code', 'STARTER')->first();
+        $prioritySupport = DB::table('features')->where('code', 'priority_support')->first();
+
+        if ($starterPlan && $prioritySupport) {
             $planFeatures[] = [
-                'plan_id' => $plan->id,
-                'feature_id' => $feature->id,
-                'value' => $value,
-                'config' => json_encode(['enabled' => true, 'rollover' => false]),
-                'sort_order' => $sortOrder++,
+                'plan_id' => $starterPlan->id,
+                'feature_id' => $prioritySupport->id,
+                'value' => 'true',
+                'config' => json_encode(['enabled' => true]),
+                'sort_order' => 99,
                 'is_inherited' => false,
                 'parent_feature_id' => null,
-                'effective_from' => $now,
-                'effective_to' => null,
+                'effective_from' => $now->copy()->subMonths(6),
+                'effective_to' => $now->copy()->subMonths(3),
                 'created_by' => null,
                 'updated_by' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
+                'created_at' => $now->copy()->subMonths(6),
+                'updated_at' => $now->copy()->subMonths(3),
                 'deleted_at' => null,
             ];
         }
+
+        // Insert in chunks
+        foreach (array_chunk($planFeatures, 50) as $chunk) {
+            DB::table('plan_features')->insert($chunk);
+        }
     }
 
-    // Add historical record
-    $starterPlan = DB::table('plans')->where('code', 'STARTER')->first();
-    $prioritySupport = DB::table('features')->where('code', 'priority_support')->first();
-
-    if ($starterPlan && $prioritySupport) {
-        $planFeatures[] = [
-            'plan_id' => $starterPlan->id,
-            'feature_id' => $prioritySupport->id,
-            'value' => 'true',
-            'config' => json_encode(['enabled' => true]),
-            'sort_order' => 99,
-            'is_inherited' => false,
-            'parent_feature_id' => null,
-            'effective_from' => $now->copy()->subMonths(6),
-            'effective_to' => $now->copy()->subMonths(3),
-            'created_by' => null,
-            'updated_by' => null,
-            'created_at' => $now->copy()->subMonths(6),
-            'updated_at' => $now->copy()->subMonths(3),
-            'deleted_at' => null,
-        ];
-    }
-
-    // Insert in chunks
-    foreach (array_chunk($planFeatures, 50) as $chunk) {
-        DB::table('plan_features')->insert($chunk);
-    }
-}
     /**
      * Get feature value based on plan and feature
      */
@@ -1249,7 +1249,7 @@ private function seedPlanFeatures(array $ids): void
                     ['unit' => 'storage_gb', 'price' => 0.10, 'first' => 0, 'last' => null],
                 ]) : null,
                 'transformations' => $plan->code === 'PAYG' ? json_encode(['round' => 'up', 'multiply' => 1]) : null,
-                'stripe_price_id' => 'price_' . strtolower($plan->code) . '_' . strtolower($this->getPlanInterval($plan->code)),
+                'stripe_price_id' => 'price_'.strtolower($plan->code).'_'.strtolower($this->getPlanInterval($plan->code)),
                 'active_from' => $now,
                 'active_to' => null,
                 'created_by' => null,
@@ -1289,6 +1289,7 @@ private function seedPlanFeatures(array $ids): void
         if (strpos($planCode, 'YEARLY') !== false || $planCode === 'ENTERPRISE') {
             return 'year';
         }
+
         return 'month';
     }
 
@@ -1352,8 +1353,8 @@ private function seedPlanFeatures(array $ids): void
                 'proration_amount' => null,
                 'proration_date' => null,
                 'gateway' => 'stripe',
-                'gateway_subscription_id' => 'sub_' . Str::random(14),
-                'gateway_customer_id' => 'cus_' . Str::random(14),
+                'gateway_subscription_id' => 'sub_'.Str::random(14),
+                'gateway_customer_id' => 'cus_'.Str::random(14),
                 'gateway_metadata' => json_encode(['payment_method' => 'pm_card_visa']),
                 'metadata' => json_encode(['source' => 'web', 'auto_renew' => true]),
                 'history' => json_encode([
@@ -1390,9 +1391,9 @@ private function seedPlanFeatures(array $ids): void
                 'proration_amount' => null,
                 'proration_date' => null,
                 'gateway' => 'paypal',
-                'gateway_subscription_id' => 'I-' . strtoupper(Str::random(10)),
-                'gateway_customer_id' => 'paypal_cus_' . Str::random(10),
-                'gateway_metadata' => json_encode(['payer_id' => 'PAYER_' . Str::random(10)]),
+                'gateway_subscription_id' => 'I-'.strtoupper(Str::random(10)),
+                'gateway_customer_id' => 'paypal_cus_'.Str::random(10),
+                'gateway_metadata' => json_encode(['payer_id' => 'PAYER_'.Str::random(10)]),
                 'metadata' => json_encode(['source' => 'referral', 'referral_code' => 'FRIEND10']),
                 'history' => json_encode([
                     ['event' => 'created', 'date' => $now->copy()->subDays(90)->toIso8601String()],
@@ -1468,8 +1469,8 @@ private function seedPlanFeatures(array $ids): void
                 'proration_amount' => null,
                 'proration_date' => null,
                 'gateway' => 'stripe',
-                'gateway_subscription_id' => 'sub_' . Str::random(14),
-                'gateway_customer_id' => 'cus_' . Str::random(14),
+                'gateway_subscription_id' => 'sub_'.Str::random(14),
+                'gateway_customer_id' => 'cus_'.Str::random(14),
                 'gateway_metadata' => json_encode(['payment_method' => 'pm_card_visa']),
                 'metadata' => json_encode(['source' => 'web']),
                 'history' => json_encode([
@@ -1507,8 +1508,8 @@ private function seedPlanFeatures(array $ids): void
                 'proration_amount' => null,
                 'proration_date' => null,
                 'gateway' => 'stripe',
-                'gateway_subscription_id' => 'sub_' . Str::random(14),
-                'gateway_customer_id' => 'cus_' . Str::random(14),
+                'gateway_subscription_id' => 'sub_'.Str::random(14),
+                'gateway_customer_id' => 'cus_'.Str::random(14),
                 'gateway_metadata' => json_encode(['payment_method' => 'pm_card_visa']),
                 'metadata' => json_encode(['source' => 'web', 'cancellation_reason' => 'too_expensive']),
                 'history' => json_encode([
@@ -1545,8 +1546,8 @@ private function seedPlanFeatures(array $ids): void
                 'proration_amount' => null,
                 'proration_date' => null,
                 'gateway' => 'stripe',
-                'gateway_subscription_id' => 'sub_' . Str::random(14),
-                'gateway_customer_id' => 'cus_' . Str::random(14),
+                'gateway_subscription_id' => 'sub_'.Str::random(14),
+                'gateway_customer_id' => 'cus_'.Str::random(14),
                 'gateway_metadata' => json_encode(['payment_method' => 'pm_card_visa']),
                 'metadata' => json_encode(['source' => 'web']),
                 'history' => json_encode([
@@ -1585,7 +1586,7 @@ private function seedPlanFeatures(array $ids): void
                 ->where('effective_from', '<=', $now)
                 ->where(function ($query) use ($now) {
                     $query->whereNull('effective_to')
-                          ->orWhere('effective_to', '>', $now);
+                        ->orWhere('effective_to', '>', $now);
                 })
                 ->get();
 
@@ -1610,7 +1611,7 @@ private function seedPlanFeatures(array $ids): void
             }
         }
 
-        if (!empty($items)) {
+        if (! empty($items)) {
             DB::table('subscription_items')->insert($items);
         }
     }
@@ -1642,8 +1643,8 @@ private function seedPlanFeatures(array $ids): void
             $invoices[] = [
                 'user_id' => $subscription->user_id,
                 'subscription_id' => $subscription->id,
-                'number' => 'INV-' . date('Ymd', strtotime($issueDate)) . '-' . str_pad($index + 1, 4, '0', STR_PAD_LEFT),
-                'external_id' => 'in_' . Str::random(14),
+                'number' => 'INV-'.date('Ymd', strtotime($issueDate)).'-'.str_pad($index + 1, 4, '0', STR_PAD_LEFT),
+                'external_id' => 'in_'.Str::random(14),
                 'type' => 'subscription',
                 'status' => $paidAt ? 'paid' : 'open',
                 'subtotal' => $subscription->amount,
@@ -1657,7 +1658,7 @@ private function seedPlanFeatures(array $ids): void
                 'paid_at' => $paidAt,
                 'finalized_at' => $issueDate,
                 'line_items' => json_encode([
-                    ['description' => 'Subscription - ' . date('M Y', strtotime($issueDate)), 'amount' => $subscription->amount, 'quantity' => 1],
+                    ['description' => 'Subscription - '.date('M Y', strtotime($issueDate)), 'amount' => $subscription->amount, 'quantity' => 1],
                 ]),
                 'tax_rates' => $tax > 0 ? json_encode([['name' => 'Sales Tax', 'rate' => 8.25, 'amount' => $tax]]) : null,
                 'discounts' => null,
@@ -1666,7 +1667,7 @@ private function seedPlanFeatures(array $ids): void
                     ['status' => 'open', 'date' => $issueDate],
                     $paidAt ? ['status' => 'paid', 'date' => $paidAt] : null,
                 ]),
-                'pdf_url' => $paidAt ? 'https://example.com/invoices/' . Str::random(10) . '.pdf' : null,
+                'pdf_url' => $paidAt ? 'https://example.com/invoices/'.Str::random(10).'.pdf' : null,
                 'created_by' => null,
                 'updated_by' => null,
                 'created_at' => $issueDate,
@@ -1675,7 +1676,7 @@ private function seedPlanFeatures(array $ids): void
             ];
         }
 
-        if (!empty($invoices)) {
+        if (! empty($invoices)) {
             DB::table('invoices')->insert($invoices);
         }
     }
@@ -1698,14 +1699,14 @@ private function seedPlanFeatures(array $ids): void
             $payments[] = [
                 'invoice_id' => $invoice->id,
                 'user_id' => $invoice->user_id,
-                'external_id' => $gateway == 'stripe' ? 'ch_' . Str::random(14) : 'pay_' . Str::random(17),
+                'external_id' => $gateway == 'stripe' ? 'ch_'.Str::random(14) : 'pay_'.Str::random(17),
                 'type' => $gateway == 'stripe' ? 'card' : 'wallet',
                 'status' => 'completed',
                 'amount' => $invoice->total,
                 'fee' => $fee,
                 'currency' => 'USD',
                 'gateway' => $gateway,
-                'gateway_response' => json_encode(['id' => $gateway == 'stripe' ? 'ch_' . Str::random(14) : 'pay_' . Str::random(17)]),
+                'gateway_response' => json_encode(['id' => $gateway == 'stripe' ? 'ch_'.Str::random(14) : 'pay_'.Str::random(17)]),
                 'payment_method' => json_encode($gateway == 'stripe' ?
                     ['brand' => 'visa', 'last4' => '4242'] :
                     ['type' => 'paypal_account', 'email' => 'user@example.com']
@@ -1722,7 +1723,7 @@ private function seedPlanFeatures(array $ids): void
             ];
         }
 
-        if (!empty($payments)) {
+        if (! empty($payments)) {
             DB::table('payments')->insert($payments);
         }
     }
@@ -1740,7 +1741,7 @@ private function seedPlanFeatures(array $ids): void
             // Create payment master
             $paymentMasterId = DB::table('payment_masters')->insertGetId([
                 'user_id' => $payment->user_id,
-                'payment_number' => 'PMT-' . date('Ymd', strtotime($payment->processed_at)) . '-' . rand(10000, 99999),
+                'payment_number' => 'PMT-'.date('Ymd', strtotime($payment->processed_at)).'-'.rand(10000, 99999),
                 'type' => 'subscription',
                 'status' => 'paid',
                 'total_amount' => $payment->amount,
@@ -1791,7 +1792,7 @@ private function seedPlanFeatures(array $ids): void
                 'subscription_id' => $subscription->id,
                 'plan_id' => $plan->id,
                 'invoice_id' => $invoice->id,
-                'description' => $plan->name . ' - Monthly subscription',
+                'description' => $plan->name.' - Monthly subscription',
                 'item_code' => $plan->code,
                 'unit_price' => $subscription->unit_price,
                 'quantity' => $subscription->quantity,
@@ -1819,7 +1820,7 @@ private function seedPlanFeatures(array $ids): void
             $paymentTransactionId = DB::table('payment_transactions')->insertGetId([
                 'payment_master_id' => $paymentMasterId,
                 'payment_child_id' => $paymentChildId,
-                'transaction_id' => $payment->gateway == 'stripe' ? 'txn_' . Str::random(14) : 'pay_' . Str::random(17),
+                'transaction_id' => $payment->gateway == 'stripe' ? 'txn_'.Str::random(14) : 'pay_'.Str::random(17),
                 'reference_id' => $payment->external_id,
                 'type' => 'payment',
                 'payment_method' => $payment->gateway == 'stripe' ? 'stripe' : 'paypal',
@@ -1842,7 +1843,7 @@ private function seedPlanFeatures(array $ids): void
                 'bank_routing_number' => null,
                 'wallet_type' => $payment->type == 'wallet' ? 'paypal' : null,
                 'wallet_number' => $payment->type == 'wallet' ? 'user@example.com' : null,
-                'wallet_transaction_id' => $payment->type == 'wallet' ? 'PAY-' . strtoupper(Str::random(10)) : null,
+                'wallet_transaction_id' => $payment->type == 'wallet' ? 'PAY-'.strtoupper(Str::random(10)) : null,
                 'installment_number' => null,
                 'total_installments' => null,
                 'initiated_at' => $payment->processed_at,
@@ -1858,7 +1859,7 @@ private function seedPlanFeatures(array $ids): void
                 'custom_fields' => null,
                 'notes' => null,
                 'failure_reason' => null,
-                'ip_address' => '192.168.1.' . rand(1, 255),
+                'ip_address' => '192.168.1.'.rand(1, 255),
                 'user_agent' => 'Mozilla/5.0',
                 'location_data' => json_encode(['country' => 'US', 'city' => 'New York']),
                 'created_by' => null,
@@ -1930,7 +1931,7 @@ private function seedPlanFeatures(array $ids): void
                 foreach ($features as $feature) {
                     $subscriptionItem = $subscriptionItems->where('feature_id', $feature->id)->first();
 
-                    if (!$subscriptionItem) {
+                    if (! $subscriptionItem) {
                         continue;
                     }
 
@@ -2002,7 +2003,7 @@ private function seedPlanFeatures(array $ids): void
             }
         }
 
-        if (!empty($usageRecords)) {
+        if (! empty($usageRecords)) {
             DB::table('usage_records')->insert($usageRecords);
         }
     }
@@ -2117,7 +2118,7 @@ private function seedPlanFeatures(array $ids): void
                 'changes' => json_encode(['status' => ['null', $subscription->status]]),
                 'causer_id' => $subscription->user_id,
                 'causer_type' => 'user',
-                'ip_address' => '192.168.1.' . rand(1, 255),
+                'ip_address' => '192.168.1.'.rand(1, 255),
                 'user_agent' => 'Mozilla/5.0',
                 'metadata' => json_encode(['source' => 'web']),
                 'occurred_at' => $subscription->created_at,
@@ -2136,7 +2137,7 @@ private function seedPlanFeatures(array $ids): void
                     'changes' => null,
                     'causer_id' => $subscription->user_id,
                     'causer_type' => 'user',
-                    'ip_address' => '192.168.1.' . rand(1, 255),
+                    'ip_address' => '192.168.1.'.rand(1, 255),
                     'user_agent' => 'Mozilla/5.0',
                     'metadata' => null,
                     'occurred_at' => $subscription->trial_starts_at,
@@ -2176,7 +2177,7 @@ private function seedPlanFeatures(array $ids): void
                     'changes' => json_encode(['status' => ['active', 'canceled']]),
                     'causer_id' => $subscription->user_id,
                     'causer_type' => 'user',
-                    'ip_address' => '192.168.1.' . rand(1, 255),
+                    'ip_address' => '192.168.1.'.rand(1, 255),
                     'user_agent' => 'Mozilla/5.0',
                     'metadata' => null,
                     'occurred_at' => $subscription->canceled_at,
@@ -2244,8 +2245,8 @@ private function seedPlanFeatures(array $ids): void
                 'user_id' => $ids['user1'],
                 'type' => 'card',
                 'gateway' => 'stripe',
-                'gateway_customer_id' => 'cus_' . Str::random(14),
-                'gateway_payment_method_id' => 'pm_' . Str::random(14),
+                'gateway_customer_id' => 'cus_'.Str::random(14),
+                'gateway_payment_method_id' => 'pm_'.Str::random(14),
                 'nickname' => 'Work Visa',
                 'is_default' => true,
                 'is_verified' => true,
@@ -2263,7 +2264,7 @@ private function seedPlanFeatures(array $ids): void
                 'crypto_currency' => null,
                 'crypto_address' => null,
                 'encrypted_data' => null,
-                'fingerprint' => 'fp_' . Str::random(16),
+                'fingerprint' => 'fp_'.Str::random(16),
                 'is_compromised' => false,
                 'metadata' => json_encode(['used_count' => 15]),
                 'gateway_metadata' => json_encode(['cvc_check' => 'pass']),
@@ -2281,7 +2282,7 @@ private function seedPlanFeatures(array $ids): void
                 'user_id' => $ids['user2'],
                 'type' => 'digital_wallet',
                 'gateway' => 'paypal',
-                'gateway_customer_id' => 'paypal_cus_' . Str::random(10),
+                'gateway_customer_id' => 'paypal_cus_'.Str::random(10),
                 'gateway_payment_method_id' => null,
                 'nickname' => 'PayPal',
                 'is_default' => true,
@@ -2300,7 +2301,7 @@ private function seedPlanFeatures(array $ids): void
                 'crypto_currency' => null,
                 'crypto_address' => null,
                 'encrypted_data' => null,
-                'fingerprint' => 'fp_paypal_' . Str::random(16),
+                'fingerprint' => 'fp_paypal_'.Str::random(16),
                 'is_compromised' => false,
                 'metadata' => json_encode(['used_count' => 8]),
                 'gateway_metadata' => json_encode(['payer_status' => 'verified']),
@@ -2337,7 +2338,7 @@ private function seedPlanFeatures(array $ids): void
                 'crypto_currency' => null,
                 'crypto_address' => null,
                 'encrypted_data' => null,
-                'fingerprint' => 'fp_bank_' . Str::random(16),
+                'fingerprint' => 'fp_bank_'.Str::random(16),
                 'is_compromised' => false,
                 'metadata' => json_encode(['used_count' => 1]),
                 'gateway_metadata' => null,
@@ -2372,7 +2373,7 @@ private function seedPlanFeatures(array $ids): void
             $orderId = DB::table('subscription_orders')->insertGetId([
                 'user_id' => $subscription->user_id,
                 'payment_master_id' => null,
-                'order_number' => 'ORD-' . date('Ymd', strtotime($subscription->created_at)) . '-' . str_pad($index + 1, 5, '0', STR_PAD_LEFT),
+                'order_number' => 'ORD-'.date('Ymd', strtotime($subscription->created_at)).'-'.str_pad($index + 1, 5, '0', STR_PAD_LEFT),
                 'status' => 'completed',
                 'type' => 'new',
                 'subtotal' => $subscription->amount,
@@ -2501,7 +2502,7 @@ private function seedPlanFeatures(array $ids): void
             $aggregates[] = [
                 'subscription_id' => $paygSubscription->id,
                 'feature_id' => $apiFeature->id,
-                'aggregate_date' => $now->format('Y-m') . '-01',
+                'aggregate_date' => $now->format('Y-m').'-01',
                 'aggregate_period' => 'monthly',
                 'total_quantity' => 125000,
                 'tier1_quantity' => 100000,
@@ -2520,7 +2521,7 @@ private function seedPlanFeatures(array $ids): void
             $aggregates[] = [
                 'subscription_id' => $paygSubscription->id,
                 'feature_id' => $storageFeature->id,
-                'aggregate_date' => $now->format('Y-m') . '-01',
+                'aggregate_date' => $now->format('Y-m').'-01',
                 'aggregate_period' => 'monthly',
                 'total_quantity' => 8.5,
                 'tier1_quantity' => 8.5,
@@ -2537,7 +2538,7 @@ private function seedPlanFeatures(array $ids): void
             ];
         }
 
-        if (!empty($aggregates)) {
+        if (! empty($aggregates)) {
             DB::table('metered_usage_aggregates')->insert($aggregates);
         }
     }
@@ -2559,7 +2560,7 @@ private function seedPlanFeatures(array $ids): void
                 $rateLimits[] = [
                     'subscription_id' => $subscription->id,
                     'feature_id' => $apiRateLimit->id,
-                    'key' => 'api_requests:' . $subscription->id,
+                    'key' => 'api_requests:'.$subscription->id,
                     'max_attempts' => 100,
                     'decay_seconds' => 60,
                     'remaining' => rand(0, 100),
@@ -2573,7 +2574,7 @@ private function seedPlanFeatures(array $ids): void
             }
         }
 
-        if (!empty($rateLimits)) {
+        if (! empty($rateLimits)) {
             DB::table('rate_limits')->insert($rateLimits);
         }
     }
@@ -2599,7 +2600,7 @@ private function seedPlanFeatures(array $ids): void
                 'payment_master_id' => $paymentMaster->id,
                 'payment_transaction_id' => $paymentTransaction->id,
                 'user_id' => $payment->user_id,
-                'refund_number' => 'REF-' . date('Ymd') . '-' . rand(10000, 99999),
+                'refund_number' => 'REF-'.date('Ymd').'-'.rand(10000, 99999),
                 'type' => 'partial',
                 'status' => 'completed',
                 'initiated_by' => 'customer',
@@ -2616,8 +2617,8 @@ private function seedPlanFeatures(array $ids): void
                 'processed_at' => $now->copy()->subDays(8),
                 'completed_at' => $now->copy()->subDays(8),
                 'failed_at' => null,
-                'gateway_refund_id' => 're_' . Str::random(14),
-                'gateway_response' => json_encode(['id' => 're_' . Str::random(14), 'status' => 'succeeded']),
+                'gateway_refund_id' => 're_'.Str::random(14),
+                'gateway_response' => json_encode(['id' => 're_'.Str::random(14), 'status' => 'succeeded']),
                 'metadata' => json_encode(['reason_code' => 'service_issue']),
                 'documents' => null,
                 'processed_by' => null,
@@ -2645,19 +2646,19 @@ private function seedPlanFeatures(array $ids): void
         foreach ($payments as $index => $payment) {
             $gateway = DB::table('payment_gateways')->where('code', $payment->gateway)->first();
             $paymentTransaction = DB::table('payment_transactions')
-                ->where('transaction_id', $payment->gateway == 'stripe' ? 'txn_' . substr($payment->external_id, 3) : $payment->external_id)
+                ->where('transaction_id', $payment->gateway == 'stripe' ? 'txn_'.substr($payment->external_id, 3) : $payment->external_id)
                 ->first();
 
             $webhookLogs[] = [
                 'payment_gateway_id' => $gateway->id,
                 'gateway' => $payment->gateway,
                 'event_type' => $payment->gateway == 'stripe' ? 'invoice.payment_succeeded' : 'PAYMENT.SALE.COMPLETED',
-                'webhook_id' => $payment->gateway == 'stripe' ? 'evt_' . Str::random(14) : 'WH-' . Str::random(20),
+                'webhook_id' => $payment->gateway == 'stripe' ? 'evt_'.Str::random(14) : 'WH-'.Str::random(20),
                 'reference_id' => $payment->external_id,
                 'payment_transaction_id' => $paymentTransaction ? $paymentTransaction->id : null,
-                'payload' => json_encode(['id' => 'evt_' . Str::random(14), 'type' => 'invoice.payment_succeeded']),
+                'payload' => json_encode(['id' => 'evt_'.Str::random(14), 'type' => 'invoice.payment_succeeded']),
                 'headers' => json_encode($payment->gateway == 'stripe' ?
-                    ['stripe-signature' => 't=' . time() . ',v1=' . Str::random(40)] :
+                    ['stripe-signature' => 't='.time().',v1='.Str::random(40)] :
                     ['paypal-auth-algo' => 'SHA256withRSA']
                 ),
                 'response_code' => 200,
@@ -2679,7 +2680,7 @@ private function seedPlanFeatures(array $ids): void
             ];
         }
 
-        if (!empty($webhookLogs)) {
+        if (! empty($webhookLogs)) {
             DB::table('payment_webhook_logs')->insert($webhookLogs);
         }
     }

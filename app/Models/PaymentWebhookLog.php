@@ -12,11 +12,11 @@ class PaymentWebhookLog extends Model
     protected $table = 'payment_webhook_logs';
 
     protected $fillable = ['payment_gateway_id', 'payment_transaction_id', 'gateway', 'event_type', 'webhook_id',
-    'reference_id', 'payload', 'headers', 'response_code', 'response_body', 'status', 'processing_error',
-     'retry_count', 'next_retry_at', 'received_at', 'processed_at', 'ip_address', 'is_verified', 'verification_error',
-      'created_by', 'updated_by'];
+        'reference_id', 'payload', 'headers', 'response_code', 'response_body', 'status', 'processing_error',
+        'retry_count', 'next_retry_at', 'received_at', 'processed_at', 'ip_address', 'is_verified', 'verification_error',
+        'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'next_retry_at' => 'datetime',
         'received_at' => 'datetime',

@@ -14,7 +14,7 @@ class DiscountsDto implements \JsonSerializable
 
     private float $amount;
 
-    private ?mixed $currency;
+    private mixed $currency;
 
     private mixed $applies_to;
 
@@ -38,9 +38,9 @@ class DiscountsDto implements \JsonSerializable
 
     private ?array $restrictions;
 
-    private ?mixed $created_by;
+    private mixed $created_by;
 
-    private ?mixed $updated_by;
+    private mixed $updated_by;
 
     private string $created_at;
 
@@ -124,12 +124,12 @@ class DiscountsDto implements \JsonSerializable
         return $this->amount;
     }
 
-    public function setCurrency(?mixed $value): void
+    public function setCurrency(mixed $value): void
     {
         $this->currency = $value;
     }
 
-    public function getCurrency(): ?mixed
+    public function getCurrency(): mixed
     {
         return $this->currency;
     }
@@ -311,22 +311,22 @@ class DiscountsDto implements \JsonSerializable
         return [];
     }
 
-    public function setCreatedBy(?mixed $value): void
+    public function setCreatedBy(mixed $value): void
     {
         $this->created_by = $value;
     }
 
-    public function getCreatedBy(): ?mixed
+    public function getCreatedBy(): mixed
     {
         return $this->created_by;
     }
 
-    public function setUpdatedBy(?mixed $value): void
+    public function setUpdatedBy(mixed $value): void
     {
         $this->updated_by = $value;
     }
 
-    public function getUpdatedBy(): ?mixed
+    public function getUpdatedBy(): mixed
     {
         return $this->updated_by;
     }

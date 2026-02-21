@@ -12,15 +12,15 @@ class PaymentTransaction extends Model
     protected $table = 'payment_transactions';
 
     protected $fillable = ['payment_master_id', 'payment_child_id', 'transaction_id', 'reference_id', 'type',
-    'payment_method', 'payment_gateway', 'gateway_response', 'payment_method_details', 'amount', 'fee', 'tax',
-     'net_amount', 'currency', 'exchange_rate', 'status', 'card_last4', 'card_brand', 'card_country', 'card_exp_month',
-     'card_exp_year', 'bank_name', 'bank_account_last4', 'bank_routing_number', 'wallet_type', 'wallet_number',
-      'wallet_transaction_id', 'installment_number', 'total_installments', 'initiated_at', 'authorized_at',
-      'captured_at', 'completed_at', 'failed_at', 'refunded_at', 'fraud_indicators', 'risk_score',
-       'requires_review', 'metadata', 'custom_fields', 'notes', 'failure_reason', 'ip_address', 'user_agent',
+        'payment_method', 'payment_gateway', 'gateway_response', 'payment_method_details', 'amount', 'fee', 'tax',
+        'net_amount', 'currency', 'exchange_rate', 'status', 'card_last4', 'card_brand', 'card_country', 'card_exp_month',
+        'card_exp_year', 'bank_name', 'bank_account_last4', 'bank_routing_number', 'wallet_type', 'wallet_number',
+        'wallet_transaction_id', 'installment_number', 'total_installments', 'initiated_at', 'authorized_at',
+        'captured_at', 'completed_at', 'failed_at', 'refunded_at', 'fraud_indicators', 'risk_score',
+        'requires_review', 'metadata', 'custom_fields', 'notes', 'failure_reason', 'ip_address', 'user_agent',
         'location_data', 'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'fraud_indicators' => 'array',
         'metadata' => 'array',

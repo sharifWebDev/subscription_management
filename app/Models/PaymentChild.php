@@ -12,11 +12,11 @@ class PaymentChild extends Model
     protected $table = 'payment_children';
 
     protected $fillable = ['payment_master_id', 'subscription_id', 'plan_id', 'invoice_id', 'item_type',
-     'item_id', 'description', 'item_code', 'unit_price', 'quantity', 'amount', 'tax_amount', 'discount_amount',
-     'total_amount', 'period_start', 'period_end', 'billing_cycle', 'status', 'paid_at', 'allocated_amount',
-     'is_fully_allocated', 'metadata', 'tax_breakdown', 'discount_breakdown', 'created_by', 'updated_by'];
+        'item_id', 'description', 'item_code', 'unit_price', 'quantity', 'amount', 'tax_amount', 'discount_amount',
+        'total_amount', 'period_start', 'period_end', 'billing_cycle', 'status', 'paid_at', 'allocated_amount',
+        'is_fully_allocated', 'metadata', 'tax_breakdown', 'discount_breakdown', 'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'period_start' => 'date',
         'period_end' => 'date',

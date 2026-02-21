@@ -12,9 +12,9 @@ class RateLimit extends Model
     protected $table = 'rate_limits';
 
     protected $fillable = ['subscription_id', 'feature_id', 'key', 'max_attempts', 'decay_seconds', 'remaining',
-     'resets_at', 'created_by', 'updated_by'];
+        'resets_at', 'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'resets_at' => 'datetime',
 

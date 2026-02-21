@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdatePlanRequest extends FormRequest
 {
@@ -11,57 +12,76 @@ class UpdatePlanRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true; // Authorization logic if needed
+        return true;
     }
 
-    public function rules()
+    /**
+     * Get the validation rules that apply to the request.
+     */
+    public function rules(): array
     {
+        $planId = $this->route('id') ?? $this->route('plan');
+
         return [
-            'name' => ['sometimes', 'string', 'max:255'],
-            'code' => ['sometimes', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:65535', 'sometimes', 'ip'],
-            'type' => ['sometimes', 'string', 'max:255'],
-            'billing_period' => ['sometimes', 'string', 'max:255'],
-            'billing_interval' => ['sometimes', 'integer', 'max:11'],
-            'is_active' => ['sometimes', 'boolean', 'max:1'],
-            'is_visible' => ['sometimes', 'boolean', 'max:1'],
-            'sort_order' => ['sometimes', 'integer', 'max:11'],
-            'is_featured' => ['sometimes', 'boolean', 'max:1'],
-            'metadata' => ['nullable', 'json'],
+            // Plan basic information
+            'name' => 'sometimes|required|string|max:255',
+            'code' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('plans', 'code')->ignore($planId),
+            ],
+            'description' => 'nullable|string',
+            'type' => ['sometimes', 'required', Rule::in(['recurring', 'usage', 'one_time', 'hybrid'])],
+            'billing_period' => ['sometimes', 'required', Rule::in(['monthly', 'yearly', 'quarterly', 'weekly', 'daily'])],
+            'billing_interval' => 'sometimes|required|integer|min:1',
+            'is_active' => 'boolean',
+            'is_visible' => 'boolean',
+            'sort_order' => 'integer|min:0',
+            'is_featured' => 'boolean',
+            'metadata' => 'nullable|array',
+
+            // Features validation
+            'features' => 'nullable|array',
+            'features.*.id' => 'nullable|exists:plan_features,id',
+            'features.*.feature_id' => 'required_with:features|exists:features,id',
+            'features.*.value' => 'required_with:features|string|max:255',
+            'features.*.config' => 'nullable|array',
+            'features.*.sort_order' => 'nullable|integer|min:0',
+            'features.*._deleted' => 'boolean',
+
+            // Prices validation
+            'prices' => 'nullable|array',
+            'prices.*.id' => 'nullable|exists:plan_prices,id',
+            'prices.*.currency' => 'required_with:prices|string|size:3',
+            'prices.*.amount' => 'required_with:prices|numeric|min:0',
+            'prices.*.interval' => ['required_with:prices', Rule::in(['month', 'year', 'quarter', 'week', 'day'])],
+            'prices.*.interval_count' => 'required_with:prices|integer|min:1',
+            'prices.*.usage_type' => ['required_with:prices', Rule::in(['licensed', 'metered', 'tiered'])],
+            'prices.*.tiers' => 'nullable|array',
+            'prices.*.stripe_price_id' => 'nullable|string|max:255',
+            'prices.*.active_from' => 'nullable|date',
+            'prices.*.active_to' => 'nullable|date|after:prices.*.active_from',
+            'prices.*._deleted' => 'boolean',
+
+            // Discounts validation
+            'discounts' => 'nullable|array',
+            'discounts.*' => 'exists:discounts,id',
         ];
     }
 
-    public function messages()
+    /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
     {
-        return [
-            'name.string' => 'The name must be a string.',
-            'name.max' => 'The name must not exceed 255 characters.',
-            'slug.string' => 'The slug must be a string.',
-            'slug.max' => 'The slug must not exceed 255 characters.',
-            'slug.alpha_dash' => 'The slug may only contain letters, numbers, dashes, and underscores.',
-            'slug.unique' => 'The slug has already been taken.',
-            'code.string' => 'The code must be a string.',
-            'code.max' => 'The code must not exceed 255 characters.',
-            'description.string' => 'The description must be a string.',
-            'description.max' => 'The description must not exceed 65535 characters.',
-            'type.string' => 'The type must be a string.',
-            'type.max' => 'The type must not exceed 255 characters.',
-            'billing_period.string' => 'The billing period must be a string.',
-            'billing_period.max' => 'The billing period must not exceed 255 characters.',
-            'billing_interval.integer' => 'The billing interval must be an integer.',
-            'billing_interval.max' => 'The billing interval must not exceed 11 characters.',
-            'is_active.boolean' => 'The is active must be true or false.',
-            'is_active.max' => 'The is active must not exceed 1 characters.',
-            'is_visible.boolean' => 'The is visible must be true or false.',
-            'is_visible.max' => 'The is visible must not exceed 1 characters.',
-            'sort_order.integer' => 'The sort order must be an integer.',
-            'sort_order.max' => 'The sort order must not exceed 11 characters.',
-            'is_featured.boolean' => 'The is featured must be true or false.',
-            'is_featured.max' => 'The is featured must not exceed 1 characters.',
-            'metadata.json' => 'The metadata must be a valid JSON string.',
-            'updated_by.string' => 'The updated by must be a string.',
-            'updated_by.max' => 'The updated by must not exceed 255 characters.',
-            'updated_at.date' => 'The updated at must be a valid date and time.',
-        ];
+        $this->merge([
+            'is_active' => $this->boolean('is_active', $this->plan?->is_active ?? true),
+            'is_visible' => $this->boolean('is_visible', $this->plan?->is_visible ?? true),
+            'is_featured' => $this->boolean('is_featured', $this->plan?->is_featured ?? false),
+            'billing_interval' => (int) ($this->billing_interval ?? $this->plan?->billing_interval ?? 1),
+            'sort_order' => (int) ($this->sort_order ?? $this->plan?->sort_order ?? 0),
+        ]);
     }
 }

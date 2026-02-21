@@ -12,12 +12,12 @@ class Feature extends Model
     protected $table = 'features';
 
     protected $fillable = ['name', 'code', 'description', 'type', 'scope', 'is_resettable', 'reset_period',
-    'metadata', 'validations', 'created_by', 'updated_by'];
+        'metadata', 'validations', 'created_by', 'updated_by'];
 
-    //cast
+    // cast
     protected $casts = [
         'updated_by' => 'integer',
-        'created_at' => 'datetime'
+        'created_at' => 'datetime',
     ];
 
     // handleFileUpload

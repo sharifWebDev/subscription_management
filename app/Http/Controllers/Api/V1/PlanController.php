@@ -186,4 +186,44 @@ class PlanController extends Controller
             return error('Plans delete failed!.');
         }
     }
+
+    // findBySlug
+    public function findBySlug($slug): JsonResponse
+    {
+        try {
+            $plan = $this->planService->getPlanBySlug($slug);
+
+            if (! $plan) {
+                throw new ModelNotFoundException;
+            }
+
+            return success('Records retrieved successfully', new PlanResource($plan));
+
+        } catch (\Exception $e) {
+            info('Plans data showing failed!', [$e]);
+
+            return error('Plans retrieval failed!');
+        }
+    }
+
+    // getPlanBySlug
+    public function getPlanBySlug($slug): JsonResponse
+    {
+        try {
+            $plan = $this->planService->getPlanBySlug($slug);
+
+            if (! $plan) {
+                throw new ModelNotFoundException;
+            }
+
+            return success('Records retrieved successfully', new PlanResource($plan));
+
+        } catch (\Exception $e) {
+            info('Plans data showing failed!', [$e]);
+
+            return error('Plans retrieval failed!');
+        }
+    }
+    //
+
 }

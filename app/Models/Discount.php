@@ -12,8 +12,8 @@ class Discount extends Model
     protected $table = 'discounts';
 
     protected $fillable = ['code', 'name', 'type', 'amount', 'currency', 'applies_to', 'applies_to_ids',
-     'max_redemptions', 'times_redeemed', 'is_active', 'starts_at', 'expires_at', 'duration',
-     'duration_in_months', 'metadata', 'restrictions', 'created_by', 'updated_by'];
+        'max_redemptions', 'times_redeemed', 'is_active', 'starts_at', 'expires_at', 'duration',
+        'duration_in_months', 'metadata', 'restrictions', 'created_by', 'updated_by'];
 
     // cast
     protected $casts = [
@@ -22,7 +22,6 @@ class Discount extends Model
         // 'restrictions' => 'array',
         'starts_at' => 'datetime',
         'expires_at' => 'datetime',
-        'created_at' => 'datetime'
+        'created_at' => 'datetime',
     ];
-
 }

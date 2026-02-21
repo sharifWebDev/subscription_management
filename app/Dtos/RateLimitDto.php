@@ -20,9 +20,9 @@ class RateLimitsDto implements \JsonSerializable
 
     private string $resets_at;
 
-    private ?mixed $created_by;
+    private mixed $created_by;
 
-    private ?mixed $updated_by;
+    private mixed $updated_by;
 
     private string $created_at;
 
@@ -138,22 +138,22 @@ class RateLimitsDto implements \JsonSerializable
         return null;
     }
 
-    public function setCreatedBy(?mixed $value): void
+    public function setCreatedBy(mixed $value): void
     {
         $this->created_by = $value;
     }
 
-    public function getCreatedBy(): ?mixed
+    public function getCreatedBy(): mixed
     {
         return $this->created_by;
     }
 
-    public function setUpdatedBy(?mixed $value): void
+    public function setUpdatedBy(mixed $value): void
     {
         $this->updated_by = $value;
     }
 
-    public function getUpdatedBy(): ?mixed
+    public function getUpdatedBy(): mixed
     {
         return $this->updated_by;
     }

@@ -12,13 +12,13 @@ class UsageRecord extends Model
     protected $table = 'usage_records';
 
     protected $fillable = ['subscription_id', 'subscription_item_id', 'feature_id', 'quantity', 'tier_quantity',
-     'amount', 'unit', 'status', 'recorded_at', 'billing_date', 'metadata', 'dimensions', 'created_by', 'updated_by'];
+        'amount', 'unit', 'status', 'recorded_at', 'billing_date', 'metadata', 'dimensions', 'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'dimensions' => 'array',
         'recorded_at' => 'datetime',
-        'billing_date' => 'date', 
+        'billing_date' => 'date',
         'created_by' => 'integer',
         'updated_by' => 'integer',
         'created_at' => 'datetime',

@@ -12,13 +12,13 @@ class PaymentMethod extends Model
     protected $table = 'payment_methods';
 
     protected $fillable = ['user_id', 'type', 'gateway', 'gateway_customer_id', 'gateway_payment_method_id',
-    'nickname', 'is_default', 'is_verified', 'card_last4', 'card_brand', 'card_exp_month', 'card_exp_year',
-    'card_country', 'bank_name', 'bank_account_last4', 'bank_account_type', 'bank_routing_number', 'wallet_type',
-    'wallet_number', 'crypto_currency', 'crypto_address', 'encrypted_data', 'fingerprint', 'is_compromised',
-     'metadata', 'gateway_metadata', 'verified_at', 'verified_by', 'last_used_at', 'usage_count', 'created_by',
-     'updated_by'];
+        'nickname', 'is_default', 'is_verified', 'card_last4', 'card_brand', 'card_exp_month', 'card_exp_year',
+        'card_country', 'bank_name', 'bank_account_last4', 'bank_account_type', 'bank_routing_number', 'wallet_type',
+        'wallet_number', 'crypto_currency', 'crypto_address', 'encrypted_data', 'fingerprint', 'is_compromised',
+        'metadata', 'gateway_metadata', 'verified_at', 'verified_by', 'last_used_at', 'usage_count', 'created_by',
+        'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'verified_at' => 'datetime',
         'last_used_at' => 'datetime',

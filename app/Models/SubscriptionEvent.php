@@ -12,9 +12,9 @@ class SubscriptionEvent extends Model
     protected $table = 'subscription_events';
 
     protected $fillable = ['subscription_id', 'type', 'data', 'changes', 'causer_id', 'causer_type', 'ip_address',
-     'user_agent', 'metadata', 'occurred_at', 'created_by', 'updated_by'];
+        'user_agent', 'metadata', 'occurred_at', 'created_by', 'updated_by'];
 
-   //cast
+    // cast
     protected $casts = [
         'occurred_at' => 'datetime',
         'created_by' => 'integer',

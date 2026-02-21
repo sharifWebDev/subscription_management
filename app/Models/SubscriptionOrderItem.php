@@ -12,11 +12,11 @@ class SubscriptionOrderItem extends Model
     protected $table = 'subscription_order_items';
 
     protected $fillable = ['subscription_order_id', 'plan_id', 'user_id', 'recipient_user_id', 'subscription_id',
-     'plan_name', 'billing_cycle', 'quantity', 'recipient_info', 'unit_price', 'amount', 'tax_amount',
-      'discount_amount', 'total_amount', 'start_date', 'end_date', 'subscription_status', 'processing_error',
-       'processed_at', 'created_by', 'updated_by'];
+        'plan_name', 'billing_cycle', 'quantity', 'recipient_info', 'unit_price', 'amount', 'tax_amount',
+        'discount_amount', 'total_amount', 'start_date', 'end_date', 'subscription_status', 'processing_error',
+        'processed_at', 'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',

@@ -12,11 +12,11 @@ class Invoice extends Model
     protected $table = 'invoices';
 
     protected $fillable = ['user_id', 'subscription_id', 'number', 'external_id', 'type', 'status', 'subtotal',
-    'tax', 'total', 'amount_due', 'amount_paid', 'amount_remaining', 'currency', 'issue_date', 'due_date',
-    'paid_at', 'finalized_at', 'line_items', 'tax_rates', 'discounts', 'metadata', 'history', 'pdf_url',
-    'created_by', 'updated_by'];
+        'tax', 'total', 'amount_due', 'amount_paid', 'amount_remaining', 'currency', 'issue_date', 'due_date',
+        'paid_at', 'finalized_at', 'line_items', 'tax_rates', 'discounts', 'metadata', 'history', 'pdf_url',
+        'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'user_id' => 'integer',
         'subscription_id' => 'integer',
@@ -35,11 +35,11 @@ class Invoice extends Model
         'due_date' => 'datetime',
         'paid_at' => 'datetime',
         'finalized_at' => 'datetime',
-        'line_items' => 'array',
-        'tax_rates' => 'array',
+        // 'line_items' => 'array',
+        // 'tax_rates' => 'json',
         'discounts' => 'array',
-        'metadata' => 'array',
-        'history' => 'array',
+        // 'metadata' => 'array',
+        // 'history' => 'array',
         'pdf_url' => 'string',
         'created_by' => 'integer',
         'updated_by' => 'integer',
@@ -55,5 +55,11 @@ class Invoice extends Model
     public function subscription()
     {
         return $this->belongsTo(\App\Models\Subscription::class, 'subscription_id');
+    }
+
+    // paymentMaster
+    public function paymentMaster()
+    {
+        return $this->belongsTo(\App\Models\PaymentMaster::class, 'payment_master_id');
     }
 }

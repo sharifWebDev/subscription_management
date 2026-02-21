@@ -3,13 +3,12 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
 
-class PlanResource extends BaseResource
+class PlanResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
@@ -21,18 +20,28 @@ class PlanResource extends BaseResource
             'description' => $this->description,
             'type' => $this->type,
             'billing_period' => $this->billing_period,
-            'billing_interval' => (int) $this->billing_interval,
+            'billing_interval' => $this->billing_interval,
             'is_active' => (bool) $this->is_active,
             'is_visible' => (bool) $this->is_visible,
-            'sort_order' => (int) $this->sort_order,
+            'sort_order' => $this->sort_order,
             'is_featured' => (bool) $this->is_featured,
             'metadata' => $this->metadata,
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at_formatted' => $this->updated_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
-            'updated_at_human' => $this->updated_at?->diffForHumans(),
+            'features' => PlanFeatureResource::collection(
+                $this->whenLoaded('planFeatures', function () {
+                    return $this->planFeatures->whereNull('effective_to');
+                })
+            ),
+            'prices' => PlanPriceResource::collection(
+                $this->whenLoaded('prices', function () {
+                    return $this->prices->whereNull('active_to');
+                })
+            ),
+            'discounts' => DiscountResource::collection(
+                $this->whenLoaded('discounts')
+            ),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
+            'deleted_at' => $this->deleted_at?->toISOString(),
         ];
     }
 }

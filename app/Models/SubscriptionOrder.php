@@ -12,11 +12,11 @@ class SubscriptionOrder extends Model
     protected $table = 'subscription_orders';
 
     protected $fillable = ['user_id', 'payment_master_id', 'order_number', 'status', 'type', 'subtotal', 'tax_amount',
-     'discount_amount', 'total_amount', 'currency', 'customer_info', 'billing_address', 'ordered_at',
-      'processed_at', 'cancelled_at', 'coupon_code', 'applied_discounts', 'metadata', 'notes', 'failure_reason',
-      'created_by', 'updated_by'];
+        'discount_amount', 'total_amount', 'currency', 'customer_info', 'billing_address', 'ordered_at',
+        'processed_at', 'cancelled_at', 'coupon_code', 'applied_discounts', 'metadata', 'notes', 'failure_reason',
+        'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'ordered_at' => 'datetime',
         'processed_at' => 'datetime',

@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\V1\Admin\AuthController;
 use App\Http\Controllers\Api\V1\DiscountController;
 use App\Http\Controllers\Api\V1\FeatureController;
 use App\Http\Controllers\Api\V1\HkProdUomController;
@@ -24,12 +23,12 @@ use App\Http\Controllers\Api\V1\SubscriptionEventController;
 use App\Http\Controllers\Api\V1\SubscriptionItemController;
 use App\Http\Controllers\Api\V1\SubscriptionOrderController;
 use App\Http\Controllers\Api\V1\SubscriptionOrderItemController;
+use App\Http\Controllers\Api\V1\UsageController;
 use App\Http\Controllers\Api\V1\UsageRecordController;
+use App\Http\Controllers\Api\V1\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
-
-Route::post('/admin/login', [AuthController::class, 'login']);
 
 Route::middleware('auth:sanctum')->get('/v1/user', function (Request $request) {
     return '$request->user()';
@@ -39,18 +38,6 @@ Route::middleware('auth:sanctum', 'verified')
     ->prefix('/v1')
     ->group(function () {
         Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
-
-        Route::middleware('auth:sanctum')
-            ->controller(HkProdUomController::class)
-            ->prefix('hk-prod-uoms')
-            ->group(function () {
-                Route::get('/', 'index');
-                Route::get('/get', 'getAll');
-                Route::post('/', 'store');
-                Route::get('/{id}', 'find');
-                Route::put('/update/{id}', 'update');
-                Route::delete('/destroy/{id}', 'destroy');
-            });
 
         Route::middleware('auth:sanctum')
             ->controller(PlanController::class)
@@ -87,7 +74,6 @@ Route::middleware('auth:sanctum', 'verified')
                 Route::delete('/destroy/{id}', 'destroy');
             });
 
-
         Route::prefix('/discounts')
             ->controller(DiscountController::class)
             ->group(function () {
@@ -117,7 +103,6 @@ Route::middleware('auth:sanctum', 'verified')
                 Route::put('/update/{id}', 'update');
                 Route::delete('/destroy/{id}', 'destroy');
             });
-
 
         Route::prefix('/metered-usage-aggregates')
             ->controller(MeteredUsageAggregateController::class)
@@ -229,7 +214,6 @@ Route::middleware('auth:sanctum', 'verified')
                 Route::delete('/destroy/{id}', 'destroy');
             });
 
-
         Route::prefix('/rate-limits')
             ->controller(RateLimitController::class)
             ->group(function () {
@@ -239,8 +223,6 @@ Route::middleware('auth:sanctum', 'verified')
                 Route::put('/update/{id}', 'update');
                 Route::delete('/destroy/{id}', 'destroy');
             });
-
-
 
         Route::prefix('/subscription-events')
             ->controller(SubscriptionEventController::class)
@@ -282,9 +264,6 @@ Route::middleware('auth:sanctum', 'verified')
                 Route::delete('/destroy/{id}', 'destroy');
             });
 
-
-
-
         Route::prefix('/usage-records')
             ->controller(UsageRecordController::class)
             ->group(function () {
@@ -296,3 +275,53 @@ Route::middleware('auth:sanctum', 'verified')
             });
 
     });
+
+
+    //================================ website routes =============================
+Route::prefix('/v1')
+    ->group(function () {
+        Route::get('/subscription-plans', [PlanController::class, 'index']);
+        Route::get('/plans/{id}', [PlanController::class, 'find']);
+        Route::get('/subscription-plans/{slug}', [PlanController::class, 'findBySlug']);
+        Route::get('/features', [FeatureController::class, 'index']);
+    });
+
+// Protected API routes
+Route::middleware('auth:sanctum')
+    ->prefix('/v1')
+    ->group(function () {
+        // Subscriptions
+        Route::get('/my-subscriptions', [SubscriptionController::class, 'getUserSubscriptions']);
+        Route::get('/subscriptions/{id}', [SubscriptionController::class, 'show']);
+        Route::post('/subscriptions/{id}/cancel', [SubscriptionController::class, 'cancel']);
+        Route::post('/subscriptions/{id}/refund', [SubscriptionController::class, 'refund']);
+        Route::post('/subscriptions/{id}/renew', [SubscriptionController::class, 'renew']);
+        Route::get('/subscriptions/{id}/invoices', [SubscriptionController::class, 'invoices']);
+        Route::get('/subscriptions/{id}/usage', [SubscriptionController::class, 'usage']);
+        Route::get('/subscriptions/{id}/events', [SubscriptionController::class, 'events']);
+        Route::post('/subscriptions/{id}/payment-method', [SubscriptionController::class, 'updatePaymentMethod']);
+
+        Route::get('/usage', [UsageController::class, 'index']);
+        Route::get('/usage/{subscriptionId}', [UsageController::class, 'show']);
+        Route::get('/usage/statistics/overview', [UsageController::class, 'statistics']);
+        Route::get('/current-billing', [UsageController::class, 'currentBilling']);
+
+        // Invoices
+        Route::get('/invoices', [InvoiceController::class, 'index']);
+        Route::get('/invoices/{id}', [InvoiceController::class, 'show']);
+        Route::get('/invoices/{id}/download', [InvoiceController::class, 'download']);
+
+        // Payment Methods
+        Route::get('/payment-methods', [PaymentController::class, 'getMethods']);
+        Route::post('/payment-methods', [PaymentController::class, 'addMethod']);
+        Route::delete('/payment-methods/{id}', [PaymentController::class, 'removeMethod']);
+        Route::put('/payment-methods/{id}/default', [PaymentController::class, 'setDefault']);
+        // settings
+        Route::get('user/settings', [SubscriptionController::class, 'settings']);
+    });
+
+// Public webhook routes
+Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripe']);
+Route::post('/webhooks/paypal', [WebhookController::class, 'handlePayPal']);
+Route::post('/webhooks/bkash', [WebhookController::class, 'handleBkash']);
+Route::post('/webhooks/surjopay', [WebhookController::class, 'handleSurjoPay']);

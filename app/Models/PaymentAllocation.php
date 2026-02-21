@@ -12,10 +12,10 @@ class PaymentAllocation extends Model
     protected $table = 'payment_allocations';
 
     protected $fillable = ['payment_master_id', 'payment_child_id', 'payment_transaction_id', 'allocatable_type',
-    'allocatable_id', 'amount', 'base_amount', 'exchange_rate', 'currency', 'allocation_reference',
-     'allocation_type', 'is_reversed', 'reversed_at', 'reversal_id', 'metadata', 'notes', 'created_by', 'updated_by'];
+        'allocatable_id', 'amount', 'base_amount', 'exchange_rate', 'currency', 'allocation_reference',
+        'allocation_type', 'is_reversed', 'reversed_at', 'reversal_id', 'metadata', 'notes', 'created_by', 'updated_by'];
 
-       //cast
+    // cast
     protected $casts = [
         'is_reversed' => 'boolean',
         'allocatable_id' => 'integer',

@@ -1433,6 +1433,29 @@ CREATE TABLE `subscription_usage_summary` (
 
 -- --------------------------------------------------------
 
+CREATE TABLE plan_discounts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    plan_id INT UNSIGNED NOT NULL,
+    discount_id INT UNSIGNED NOT NULL,
+    created_by INT UNSIGNED NULL,
+    updated_by INT UNSIGNED NULL,
+    created_at TIMESTAMP NULL DEFAULT NULL,
+    updated_at TIMESTAMP NULL DEFAULT NULL,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+
+    CONSTRAINT fk_plan_discounts_plan
+        FOREIGN KEY (plan_id)
+        REFERENCES plans(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_plan_discounts_discount
+        FOREIGN KEY (discount_id)
+        REFERENCES discounts(id)
+        ON DELETE CASCADE,
+
+    UNIQUE KEY unique_plan_discount (plan_id, discount_id)
+);
+
 --
 -- Table structure for table `sessions`
 --
