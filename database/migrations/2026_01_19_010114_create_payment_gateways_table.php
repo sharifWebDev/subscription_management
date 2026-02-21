@@ -25,6 +25,7 @@ return new class extends Migration
             $table->text('api_secret')->nullable();
             $table->text('webhook_secret')->nullable();
             $table->text('merchant_id')->nullable();
+            $table->text('merchant_password')->nullable();
             $table->text('store_id')->nullable();
             $table->text('store_password')->nullable();
             $table->string('base_url', 255)->nullable();

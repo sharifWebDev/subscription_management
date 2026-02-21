@@ -53,4 +53,10 @@ class SubscriptionOrderItem extends Model
     {
         return $this->belongsTo(\App\Models\Subscription::class, 'subscription_id');
     }
+
+    // order
+    public function order()
+    {
+        return $this->belongsTo(\App\Models\SubscriptionOrder::class, 'subscription_order_id');
+    }
 }

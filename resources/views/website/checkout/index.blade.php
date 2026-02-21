@@ -19,11 +19,6 @@
 
 <!-- Checkout Form -->
 <section class="py-5">
-    @php
-        $gateway_name = 'SurjoPay';
-        $merchant_number = '01965674161';
-
-    @endphp
     <div class="container">
         <div id="checkoutLoader" class="text-center py-5">
             <div class="loader"></div>
@@ -39,10 +34,12 @@
                         </div>
                         <div class="card-body p-4">
                             <form action="javascript:void(0);" id="checkoutForm">
-
+                                @csrf
                                 <input type="hidden" name="plan_id" id="plan_id" value="{{ $plan_id }}">
                                 <input type="hidden" name="price_id" id="price_id" value="">
                                 <input type="hidden" name="gateway" id="selected_gateway" value="">
+                                <input type="hidden" name="payment_method_id" id="payment_method_id" value="">
+                                <input type="hidden" name="save_payment_method" id="save_payment_method" value="1">
 
                                 <!-- Billing Cycle -->
                                 <div class="mb-4">
@@ -72,9 +69,27 @@
                                     </div>
                                 </div>
 
-                                <!-- Payment Gateways -->
-                                <div class="mb-4">
-                                    <label class="form-label fw-bold">Payment Method</label>
+                                <!-- Saved Payment Methods (for logged in users) -->
+                                @auth
+                                <div class="mb-4" id="savedPaymentMethodsSection" style="display: none;">
+                                    <label class="form-label fw-bold">Your Saved Payment Methods</label>
+                                    <div id="savedMethodsLoader" class="text-center py-2">
+                                        <div class="loader" style="width: 30px; height: 30px;"></div>
+                                    </div>
+                                    <div id="savedMethodsContainer" class="row g-3"></div>
+
+                                    <!-- Use New Payment Method Toggle -->
+                                    <div class="mt-3 text-center">
+                                        <button type="button" class="btn btn-link" id="useNewMethodBtn">
+                                            <i class="fas fa-plus-circle me-2"></i>Use a different payment method
+                                        </button>
+                                    </div>
+                                </div>
+                                @endauth
+
+                                <!-- Payment Gateways (shown when no saved methods or user clicks "use new") -->
+                                <div class="mb-4" id="paymentGatewaysSection" style="display: none;">
+                                    <label class="form-label fw-bold">Select Payment Method</label>
 
                                     <!-- Nav tabs for payment gateways -->
                                     <ul class="nav nav-tabs" id="paymentTabs" role="tablist">
@@ -98,192 +113,44 @@
                                                 <i class="fas fa-wallet me-2"></i>Digital Wallets
                                             </button>
                                         </li>
-                                        <li class="nav-item" role="presentation">
-                                            <button class="nav-link" id="others-tab" data-bs-toggle="tab" data-bs-target="#others" type="button" role="tab">
-                                                <i class="fas fa-ellipsis-h me-2"></i>Others
-                                            </button>
-                                        </li>
                                     </ul>
 
                                     <!-- Tab panes -->
                                     <div class="tab-content p-3 border border-top-0 rounded-bottom">
                                         <!-- Cards -->
                                         <div class="tab-pane fade show active" id="cards" role="tabpanel">
-                                            <div class="row g-3">
-                                                <div class="col-md-4">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_stripe" value="stripe" autocomplete="off"
-                                                               data-gateway="stripe">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_stripe">
-                                                            <i class="fab fa-cc-stripe fa-2x mb-2"></i>
-                                                            <br>Stripe
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_paypal" value="paypal" autocomplete="off"
-                                                               data-gateway="paypal">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_paypal">
-                                                            <i class="fab fa-paypal fa-2x mb-2"></i>
-                                                            <br>PayPal
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_paytm" value="paytm" autocomplete="off"
-                                                               data-gateway="paytm">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_paytm">
-                                                            <i class="fas fa-rupee-sign fa-2x mb-2"></i>
-                                                            <br>Paytm
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <div class="row g-3" id="cardGateways"></div>
                                         </div>
 
                                         <!-- Bank Transfer -->
                                         <div class="tab-pane fade" id="bank" role="tabpanel">
-                                            <div class="row g-3">
-                                                <div class="col-md-4">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_bank_transfer" value="bank_transfer" autocomplete="off"
-                                                               data-gateway="bank_transfer">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_bank_transfer">
-                                                            <i class="fas fa-university fa-2x mb-2"></i>
-                                                            <br>Bank Transfer
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <div class="row g-3" id="bankGateways"></div>
                                         </div>
 
-                                        <!-- Mobile Banking (BD) -->
+                                        <!-- Mobile Banking -->
                                         <div class="tab-pane fade" id="mobile" role="tabpanel">
-                                            <div class="row g-3">
-                                                <div class="col-md-3">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_bkash" value="bkash" autocomplete="off"
-                                                               data-gateway="bkash">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_bkash">
-                                                            <img src="https://cdn.bkash.com/logo.png" alt="bKash" style="height: 30px;" class="mb-2">
-                                                            <br>bKash
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_rocket" value="rocket" autocomplete="off"
-                                                               data-gateway="rocket">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_rocket">
-                                                            <i class="fas fa-rocket fa-2x mb-2"></i>
-                                                            <br>Rocket
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_nagad" value="nagad" autocomplete="off"
-                                                               data-gateway="nagad">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_nagad">
-                                                            <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
-                                                            <br>Nagad
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_surjo" value="surjopay" autocomplete="off"
-                                                               data-gateway="surjopay">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_surjo">
-                                                            <i class="fas fa-bolt fa-2x mb-2"></i>
-                                                            <br>SurjoPay
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <div class="row g-3" id="mobileGateways"></div>
                                         </div>
 
                                         <!-- Digital Wallets -->
                                         <div class="tab-pane fade" id="wallets" role="tabpanel">
-                                            <div class="row g-3">
-                                                <div class="col-md-4">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_google_pay" value="google_pay" autocomplete="off"
-                                                               data-gateway="google_pay">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_google_pay">
-                                                            <i class="fab fa-google-pay fa-2x mb-2"></i>
-                                                            <br>Google Pay
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_apple_pay" value="apple_pay" autocomplete="off"
-                                                               data-gateway="apple_pay">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_apple_pay">
-                                                            <i class="fab fa-apple-pay fa-2x mb-2"></i>
-                                                            <br>Apple Pay
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_amazon_pay" value="amazon_pay" autocomplete="off"
-                                                               data-gateway="amazon_pay">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_amazon_pay">
-                                                            <i class="fab fa-amazon-pay fa-2x mb-2"></i>
-                                                            <br>Amazon Pay
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Others -->
-                                        <div class="tab-pane fade" id="others" role="tabpanel">
-                                            <div class="row g-3">
-                                                <div class="col-md-4">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_cash" value="cash" autocomplete="off"
-                                                               data-gateway="cash">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_cash">
-                                                            <i class="fas fa-money-bill fa-2x mb-2"></i>
-                                                            <br>Cash
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <div class="payment-method-card">
-                                                        <input type="radio" class="btn-check" name="payment_method"
-                                                               id="gateway_cheque" value="cheque" autocomplete="off"
-                                                               data-gateway="cheque">
-                                                        <label class="btn btn-outline-primary w-100 py-3" for="gateway_cheque">
-                                                            <i class="fas fa-file-invoice fa-2x mb-2"></i>
-                                                            <br>Cheque
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <div class="row g-3" id="walletGateways"></div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Dynamic Payment Details Section -->
+                                <!-- Dynamic Payment Details Section (for new payment methods) -->
                                 <div id="paymentDetailsContainer"></div>
+
+                                <!-- Save Payment Method Checkbox (for new methods) -->
+                                <div class="mb-4" id="saveMethodCheckbox" style="display: none;">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="save_payment_method_checkbox" checked>
+                                        <label class="form-check-label" for="save_payment_method_checkbox">
+                                            Save this payment method for future purchases
+                                        </label>
+                                    </div>
+                                </div>
 
                                 <!-- Terms -->
                                 <div class="mb-4">
@@ -370,6 +237,51 @@
             </div>
         </div>
     </div>
+
+    <!-- OTP Verification Modal -->
+    <div class="modal fade" id="otpModal" tabindex="-1" aria-labelledby="otpModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="otpModalLabel">Verify Your Email</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="otpStep1">
+                        <p>We've sent a One-Time Password (OTP) to <strong id="otpEmailDisplay"></strong></p>
+                        <p class="text-muted small">Please enter the 6-digit code below to continue.</p>
+
+                        <div class="otp-input-container text-center mb-3">
+                            <input type="text" class="form-control form-control-lg text-center" id="otpInput"
+                                   maxlength="6" placeholder="000000" style="font-size: 2rem; letter-spacing: 0.5rem;">
+                        </div>
+
+                        <div class="text-center mb-3">
+                            <span class="text-muted">OTP expires in </span>
+                            <span id="otpTimer" class="fw-bold text-primary">10:00</span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-primary" id="verifyOtpBtn" disabled>
+                                <span class="spinner-border spinner-border-sm d-none" id="otpSpinner"></span>
+                                Verify & Complete Purchase
+                            </button>
+                            <button type="button" class="btn btn-link" id="resendOtpBtn">Resend OTP</button>
+                        </div>
+                    </div>
+
+                    <div id="otpStep2" style="display: none;">
+                        <div class="text-center py-4">
+                            <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
+                            <h5>Verification Successful!</h5>
+                            <p class="text-muted">Please wait while we process your payment...</p>
+                            <div class="loader mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </section>
 
 <!-- Payment Templates -->
@@ -392,9 +304,7 @@
 <script type="text/template" id="mobileBankingTemplate">
     <div class="card mb-4">
         <div class="card-body">
-            <h5 class="mb-3">
-                 $gateway_name
-                Payment</h5>
+            <h5 class="mb-3" id="mobileGatewayName"></h5>
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group mb-3">
@@ -409,18 +319,11 @@
                     </div>
                 </div>
             </div>
-            <div class="alert alert-warning">
+            <div class="alert alert-warning" id="merchantInfo">
                 <i class="fas fa-info-circle me-2"></i>
-                Send payment to: <strong>  $merchant_number  </strong> and enter the transaction ID above.
+                Send payment to: <strong id="merchantNumber"></strong> and enter the transaction ID above.
             </div>
         </div>
-    </div>
-</script>
-
-<script type="text/template" id="paytmTemplate">
-    <div class="alert alert-info">
-        <i class="fas fa-rupee-sign me-2"></i>
-        You will be redirected to Paytm to complete your payment.
     </div>
 </script>
 
@@ -445,6 +348,7 @@
         cursor: pointer;
         transition: all 0.3s;
         height: 100%;
+        border: 2px solid transparent;
     }
     .payment-method-card .btn-check:checked + .btn {
         background-color: #0d6efd;
@@ -463,6 +367,24 @@
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
+    .saved-method-card {
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+        height: 100%;
+    }
+    .saved-method-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .saved-method-card.selected {
+        border-color: #0d6efd;
+        background-color: #f0f7ff;
+    }
+    .saved-method-card.default {
+        border-color: #198754;
+        background-color: #f0fff4;
+    }
     .nav-tabs .nav-link {
         color: #495057;
     }
@@ -479,6 +401,11 @@
         border-radius: 0.375rem;
         background: white;
     }
+    .otp-input-container input {
+        font-size: 2rem;
+        letter-spacing: 0.5rem;
+        text-align: center;
+    }
 </style>
 @endpush
 
@@ -489,32 +416,48 @@
         const planId = '{{ $plan_id }}';
         const urlParams = new URLSearchParams(window.location.search);
         const selectedPriceId = urlParams.get('price_id');
+        const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
 
         let planData = null;
         let selectedPrice = null;
+        let userPaymentMethods = [];
+        let paymentGateways = [];
+        let selectedPaymentMethod = null;
+        let selectedGateway = null;
         let stripe = null;
         let stripeElements = null;
         let stripeCard = null;
+        let checkoutData = {};
+        let otpTimer = null;
 
         // Tax rate from config
         const TAX_RATE = {{ config('app.tax_rate', 10) }};
 
         // Merchant numbers for different gateways
         const merchantNumbers = {
-            bkash: '017XXXXXXXX',
-            rocket: '018XXXXXXXX',
-            nagad: '016XXXXXXXX'
+            bkash: '01965674161',
+            rocket: '01812345678',
+            nagad: '01612345678',
+            surjopay: '01965674161'
         };
 
         // Fetch plan details
         fetchPlanDetails();
 
+        // If logged in, fetch payment methods and gateways
+        if (isLoggedIn) {
+            fetchUserPaymentMethods();
+        }
+
+        // Always fetch payment gateways (for both guest and logged in)
+        fetchPaymentGateways();
+
         function fetchPlanDetails() {
             axios.get(`/plans/${planId}`)
                 .then(response => {
-                    planData = response.data.data;
+                    // Fix: Check the actual response structure
+                    planData = response.data.data || response.data;
                     renderCheckout();
-
                     $('#checkoutLoader').hide();
                     $('#checkoutContent').show();
                 })
@@ -534,15 +477,63 @@
                 });
         }
 
+        function fetchUserPaymentMethods() {
+            axios.get('/payment-methods')
+                .then(response => {
+                    // Fix: Check the actual response structure
+                    userPaymentMethods = response.data.data || response.data || [];
+                    if (userPaymentMethods.length > 0) {
+                        renderSavedPaymentMethods();
+                        $('#savedPaymentMethodsSection').show();
+                        $('#paymentGatewaysSection').hide();
+                    } else {
+                        $('#savedMethodsLoader').hide();
+                        $('#savedPaymentMethodsSection').hide();
+                        $('#paymentGatewaysSection').show();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching payment methods:', error);
+                    $('#savedMethodsLoader').hide();
+                    $('#savedPaymentMethodsSection').hide();
+                    $('#paymentGatewaysSection').show();
+                });
+        }
+
+        function fetchPaymentGateways() {
+            axios.get('/payment-gateways')
+                .then(response => {
+                    // Fix: Access the nested data structure
+                    const responseData = response.data;
+                    if (responseData.data && responseData.data.data) {
+                        paymentGateways = responseData.data.data;
+                    } else if (responseData.data) {
+                        paymentGateways = responseData.data;
+                    } else {
+                        paymentGateways = responseData;
+                    }
+
+                    console.log('Payment gateways loaded:', paymentGateways);
+                    renderGatewayTabs();
+                })
+                .catch(error => {
+                    console.error('Error fetching gateways:', error);
+                });
+        }
+
         function renderCheckout() {
             // Update breadcrumb
-            $('#planBreadcrumbLink').attr('href', `/plan/${planData.slug}`).text(planData.name);
+            if (planData && planData.slug) {
+                $('#planBreadcrumbLink').attr('href', `/plan/${planData.slug}`).text(planData.name);
+            } else {
+                $('#planBreadcrumbLink').text('Plan');
+            }
 
             // Set price ID
-            if (selectedPriceId && planData.prices) {
+            if (selectedPriceId && planData && planData.prices) {
                 selectedPrice = planData.prices.find(p => p.id == selectedPriceId);
             }
-            if (!selectedPrice && planData.prices && planData.prices.length > 0) {
+            if (!selectedPrice && planData && planData.prices && planData.prices.length > 0) {
                 selectedPrice = planData.prices[0];
             }
 
@@ -555,15 +546,12 @@
 
             // Render order summary
             renderOrderSummary();
-
-            // Setup payment method handlers
-            setupPaymentMethods();
         }
 
         function renderBillingCycles() {
             let html = '';
 
-            if (planData.prices && planData.prices.length > 0) {
+            if (planData && planData.prices && planData.prices.length > 0) {
                 planData.prices.forEach(price => {
                     let isSelected = selectedPrice && price.id === selectedPrice.id;
                     let isBestValue = price.interval === 'year';
@@ -611,7 +599,7 @@
             let tax = amount * (TAX_RATE / 100);
             let total = amount + tax;
 
-            $('#summaryPlanName').text(planData.name);
+            $('#summaryPlanName').text(planData ? planData.name : 'Plan');
             $('#summaryInterval').text(selectedPrice.interval_description || '/' + selectedPrice.interval);
 
             let amountFormatted = formatMoney(amount);
@@ -648,21 +636,172 @@
             $('#summaryNoteText').text(noteText);
         }
 
-        function setupPaymentMethods() {
-            // Handle payment method selection
-            $('input[name="payment_method"]').change(function() {
-                let gateway = $(this).data('gateway');
-                $('#selected_gateway').val(gateway);
+        function renderSavedPaymentMethods() {
+            if (!userPaymentMethods || userPaymentMethods.length === 0) {
+                $('#savedMethodsLoader').hide();
+                $('#savedPaymentMethodsSection').hide();
+                $('#paymentGatewaysSection').show();
+                return;
+            }
 
-                // Load payment details for selected gateway
-                loadPaymentDetails(gateway);
+            let html = '';
+            const defaultMethod = userPaymentMethods.find(m => m.is_default);
+
+            userPaymentMethods.forEach(method => {
+                const isDefault = method.is_default ? 'default' : '';
+                const selected = method.is_default ? 'selected' : '';
+
+                let displayText = method.display || method.card?.last4 || 'Card';
+                let icon = method.icon || 'fas fa-credit-card';
+
+                html += `
+                    <div class="col-md-6">
+                        <div class="card saved-method-card ${isDefault} ${selected}"
+                             onclick="selectSavedMethod(${method.id}, this)">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <i class="${icon} fa-2x text-primary me-3"></i>
+                                    <div>
+                                        <h6 class="mb-0">${displayText}</h6>
+                                        ${isDefault ? '<span class="badge bg-success mt-1">Default</span>' : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
             });
 
-            // Initialize Stripe if needed
-            if ($('#gateway_stripe').is(':checked')) {
-                loadPaymentDetails('stripe');
+            $('#savedMethodsContainer').html(html);
+            $('#savedMethodsLoader').hide();
+
+            // Auto-select default method
+            if (defaultMethod) {
+                selectSavedMethod(defaultMethod.id, null);
             }
         }
+
+        window.selectSavedMethod = function(methodId, element) {
+            selectedPaymentMethod = userPaymentMethods.find(m => m.id === methodId);
+            if (!selectedPaymentMethod) return;
+
+            selectedGateway = selectedPaymentMethod.gateway;
+
+            $('.saved-method-card').removeClass('selected');
+            if (element) {
+                $(element).addClass('selected');
+            } else {
+                // Find and select the element by method ID
+                $(`.saved-method-card[onclick*="${methodId}"]`).addClass('selected');
+            }
+
+            $('#selected_gateway').val(selectedGateway);
+            $('#payment_method_id').val(methodId);
+            $('#paymentGatewaysSection').hide();
+            $('#paymentDetailsContainer').empty();
+            $('#saveMethodCheckbox').hide();
+
+            // If it's Stripe card, we might need to confirm it's still valid
+            if (selectedGateway === 'stripe' && selectedPaymentMethod.card) {
+                // Check if card is expired
+                const expYear = selectedPaymentMethod.card.exp_year;
+                const expMonth = selectedPaymentMethod.card.exp_month;
+                const now = new Date();
+                const currentYear = now.getFullYear();
+                const currentMonth = now.getMonth() + 1;
+
+                if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+                    toastr.warning('Your saved card has expired. Please use a different method.');
+                }
+            }
+        };
+
+        window.useNewMethod = function() {
+            selectedPaymentMethod = null;
+            selectedGateway = null;
+            $('#payment_method_id').val('');
+            $('#selected_gateway').val('');
+            $('.saved-method-card').removeClass('selected');
+            $('#savedPaymentMethodsSection').hide();
+            $('#paymentGatewaysSection').show();
+            $('#saveMethodCheckbox').show();
+
+            // Show the payment tabs
+            $('.nav-tabs .nav-link:first').tab('show');
+        };
+
+        $('#useNewMethodBtn').click(function() {
+            useNewMethod();
+        });
+
+        function renderGatewayTabs() {
+            if (!paymentGateways || paymentGateways.length === 0) {
+                console.log('No payment gateways to render');
+                return;
+            }
+
+            // Fix: Properly categorize gateways based on their type and code
+            const cardGateways = paymentGateways.filter(g => g.type === 'card' || g.code === 'stripe');
+            const bankGateways = paymentGateways.filter(g => g.type === 'bank' || g.code === 'bank_transfer');
+            const mobileGateways = paymentGateways.filter(g =>
+                ['bkash', 'nagad', 'rocket', 'surjopay', 'sslcommerz'].includes(g.code) ||
+                g.type === 'wallet' ||
+                g.type === 'aggregator'
+            );
+            const walletGateways = paymentGateways.filter(g =>
+                ['paypal', 'google_pay', 'apple_pay', 'amazon_pay'].includes(g.code)
+            );
+
+            renderGatewayGroup('#cardGateways', cardGateways);
+            renderGatewayGroup('#bankGateways', bankGateways);
+            renderGatewayGroup('#mobileGateways', mobileGateways);
+            renderGatewayGroup('#walletGateways', walletGateways);
+
+            // Hide empty tabs
+            if (cardGateways.length === 0) $('#cards-tab').parent().hide();
+            if (bankGateways.length === 0) $('#bank-tab').parent().hide();
+            if (mobileGateways.length === 0) $('#mobile-tab').parent().hide();
+            if (walletGateways.length === 0) $('#wallets-tab').parent().hide();
+        }
+
+        function renderGatewayGroup(selector, gateways) {
+            if (gateways.length === 0) {
+                $(selector).closest('.tab-pane').hide();
+                return;
+            }
+
+            $(selector).closest('.tab-pane').show();
+
+            let html = '';
+            gateways.forEach(gateway => {
+                const icon = getGatewayIcon(gateway.code);
+                html += `
+                    <div class="col-md-4">
+                        <div class="payment-method-card">
+                            <input type="radio" class="btn-check" name="payment_method"
+                                   id="gateway_${gateway.code}" value="${gateway.code}" autocomplete="off"
+                                   data-gateway="${gateway.code}">
+                            <label class="btn btn-outline-primary w-100 py-3" for="gateway_${gateway.code}">
+                                <i class="${icon} fa-2x mb-2"></i>
+                                <br>${gateway.name}
+                            </label>
+                        </div>
+                    </div>
+                `;
+            });
+            $(selector).html(html);
+        }
+
+        // Handle payment method selection
+        $(document).on('change', 'input[name="payment_method"]', function() {
+            selectedGateway = $(this).data('gateway');
+            selectedPaymentMethod = null;
+            $('#selected_gateway').val(selectedGateway);
+            $('#payment_method_id').val('');
+
+            // Load payment details for selected gateway
+            loadPaymentDetails(selectedGateway);
+        });
 
         function loadPaymentDetails(gateway) {
             $('#paymentDetailsContainer').empty();
@@ -674,6 +813,8 @@
                 case 'bkash':
                 case 'rocket':
                 case 'nagad':
+                case 'surjopay':
+                case 'sslcommerz':
                     loadMobileBankingPayment(gateway);
                     break;
                 case 'bank_transfer':
@@ -682,11 +823,8 @@
                 case 'paypal':
                     loadPayPalPayment();
                     break;
-                case 'paytm':
-                    loadPaytmPayment();
-                    break;
-                case 'surjopay':
-                    loadSurjoPayPayment();
+                case 'cash':
+                    loadCashPayment();
                     break;
                 case 'google_pay':
                 case 'apple_pay':
@@ -705,45 +843,74 @@
 
             // Initialize Stripe
             if (!stripe) {
-                stripe = Stripe('{{ config("services.stripe.key") }}');
-                stripeElements = stripe.elements();
+                // Get Stripe publishable key
+                const stripeGateway = paymentGateways.find(g => g.code === 'stripe');
+                if (stripeGateway) {
+                    const publicKey = stripeGateway.api_key || 'pk_test_your_key';
+                    
+                    stripe = Stripe(publicKey);
+                    stripeElements = stripe.elements();
 
-                stripeCard = stripeElements.create('card', {
-                    style: {
-                        base: {
-                            fontSize: '16px',
-                            color: '#32325d',
+                    stripeCard = stripeElements.create('card', {
+                        style: {
+                            base: {
+                                fontSize: '16px',
+                                color: '#32325d',
+                            }
                         }
-                    }
-                });
+                    });
 
-                stripeCard.mount('#stripe-card-element');
+                    stripeCard.mount('#stripe-card-element');
 
-                stripeCard.on('change', function(event) {
-                    let displayError = document.getElementById('stripe-errors');
-                    if (event.error) {
-                        displayError.textContent = event.error.message;
-                    } else {
-                        displayError.textContent = '';
-                    }
-                });
+                    stripeCard.on('change', function(event) {
+                        let displayError = document.getElementById('stripe-errors');
+                        if (event.error) {
+                            displayError.textContent = event.error.message;
+                        } else {
+                            displayError.textContent = '';
+                        }
+                    });
+                } else {
+                    $('#paymentDetailsContainer').html('<div class="alert alert-danger">Stripe configuration not found</div>');
+                }
+            } else {
+                // Re-mount card if needed
+                if (stripeCard) {
+                    stripeCard.mount('#stripe-card-element');
+                }
             }
         }
 
         function loadMobileBankingPayment(gateway) {
             let template = $('#mobileBankingTemplate').html();
-            let gatewayName = gateway.charAt(0).toUpperCase() + gateway.slice(1);
-            let merchantNumber = merchantNumbers[gateway] || '01XXXXXXXXX';
-
-            template = template.replace('{{ $gateway_name }}', gatewayName);
-            template = template.replace('{{ $merchant_number }}', merchantNumber);
+            let gatewayObj = paymentGateways.find(g => g.code === gateway);
+            let gatewayName = gatewayObj ? gatewayObj.name : (gateway.charAt(0).toUpperCase() + gateway.slice(1));
+            let merchantNumber = merchantNumbers[gateway] || '01965674161';
 
             $('#paymentDetailsContainer').html(template);
+            $('#mobileGatewayName').text(gatewayName + ' Payment');
+            $('#merchantNumber').text(merchantNumber);
         }
 
         function loadBankTransferPayment() {
             let template = $('#bankTemplate').html();
             $('#paymentDetailsContainer').html(template);
+
+            // Add bank details from config if available
+            const bankGateway = paymentGateways.find(g => g.code === 'bank_transfer');
+            if (bankGateway && bankGateway.config) {
+                const config = bankGateway.config;
+                let bankDetails = '<div class="mt-3 p-3 bg-light rounded">';
+                bankDetails += '<h6>Bank Account Details:</h6>';
+                if (config.bank_name) bankDetails += `<p class="mb-1"><strong>Bank:</strong> ${config.bank_name}</p>`;
+                if (config.account_name) bankDetails += `<p class="mb-1"><strong>Account Name:</strong> ${config.account_name}</p>`;
+                if (config.account_number) bankDetails += `<p class="mb-1"><strong>Account Number:</strong> ${config.account_number}</p>`;
+                if (config.routing_number) bankDetails += `<p class="mb-1"><strong>Routing Number:</strong> ${config.routing_number}</p>`;
+                if (config.swift_code) bankDetails += `<p class="mb-1"><strong>SWIFT Code:</strong> ${config.swift_code}</p>`;
+                bankDetails += '</div>';
+
+                $('.alert-info').after(bankDetails);
+            }
         }
 
         function loadPayPalPayment() {
@@ -751,14 +918,14 @@
             $('#paymentDetailsContainer').html(template);
         }
 
-        function loadPaytmPayment() {
-            let template = $('#paytmTemplate').html();
-            $('#paymentDetailsContainer').html(template);
-        }
-
-        function loadSurjoPayPayment() {
-            let template = $('#surjopayTemplate').html();
-            $('#paymentDetailsContainer').html(template);
+        function loadCashPayment() {
+            $('#paymentDetailsContainer').html(`
+                <div class="alert alert-warning">
+                    <i class="fas fa-money-bill-wave me-2"></i>
+                    <strong>Cash Payment:</strong>
+                    <p class="mb-0 mt-2">Please have the exact amount ready for cash payment. Our representative will contact you to arrange payment.</p>
+                </div>
+            `);
         }
 
         function loadDigitalWalletPayment(gateway) {
@@ -771,8 +938,8 @@
             `);
         }
 
-        // Form submission
-        $('#checkoutForm').submit(async function(e) {
+        // Form submission handler
+        $('#checkoutForm').on('submit', async function(e) {
             e.preventDefault();
 
             // Validate form
@@ -780,25 +947,206 @@
                 return;
             }
 
-            let gateway = $('#selected_gateway').val();
-
-            // Handle Stripe payment specially
-            if (gateway === 'stripe') {
-                await processStripePayment();
+            if (isLoggedIn) {
+                // Process as authenticated user
+                await processAuthenticatedCheckout();
             } else {
-                // For other gateways, submit normally
-                submitForm();
+                // Process OTP flow for guest
+                await processGuestCheckout();
             }
         });
 
-        async function processStripePayment() {
-            if (!stripeCard) {
-                toastr.error('Stripe not initialized', 'Error');
+        // Process guest checkout with OTP
+        async function processGuestCheckout() {
+            const email = $('#email').val();
+
+            // Collect checkout data
+            checkoutData = {
+                plan_id: $('#plan_id').val(),
+                price_id: $('#price_id').val(),
+                payment_method: selectedGateway,
+                gateway: selectedGateway,
+                first_name: $('#first_name').val(),
+                last_name: $('#last_name').val(),
+                email: email,
+                phone: $('#phone').val(),
+                terms: $('#terms').is(':checked'),
+                payment_details: collectPaymentDetails(),
+                save_payment_method: $('#save_payment_method_checkbox').is(':checked')
+            };
+
+            // Show loading
+            $('#submitBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Sending OTP...');
+
+            try {
+                // Send OTP
+                const response = await axios.post('/checkout/send-otp', { email });
+
+                if (response.data.success) {
+                    // Show OTP modal
+                    $('#otpEmailDisplay').text(email);
+                    $('#otpModal').modal('show');
+
+                    // Start timer
+                    const expiresAt = new Date(response.data.expires_at).getTime();
+                    startOtpTimer(expiresAt);
+
+                    // Enable verify button when OTP is entered
+                    $('#otpInput').off('input').on('input', function() {
+                        const otp = $(this).val().replace(/\D/g, '');
+                        $(this).val(otp);
+                        $('#verifyOtpBtn').prop('disabled', otp.length !== 6);
+                    });
+
+                    // Reset modal state
+                    $('#otpStep1').show();
+                    $('#otpStep2').hide();
+                }
+            } catch (error) {
+                console.error('OTP sending failed:', error);
+                toastr.error(error.response?.data?.message || 'Failed to send OTP. Please try again.');
+            } finally {
+                $('#submitBtn').prop('disabled', false).html('<i class="fas fa-lock me-2"></i>Complete Purchase');
+            }
+        }
+
+        // Verify OTP and complete checkout
+        $('#verifyOtpBtn').on('click', async function() {
+            const otp = $('#otpInput').val();
+
+            if (!otp || otp.length !== 6) {
+                toastr.error('Please enter a valid 6-digit OTP');
                 return;
             }
 
+            // Show loading
+            $(this).prop('disabled', true);
+            $('#otpSpinner').removeClass('d-none');
+
+            // Add OTP to checkout data
+            checkoutData.otp = otp;
+
+            try {
+                const response = await axios.post('/checkout/verify-otp', checkoutData);
+
+                if (response.data.success) {
+                    // Show success step
+                    $('#otpStep1').hide();
+                    $('#otpStep2').show();
+
+                    // Clear timer
+                    if (otpTimer) clearInterval(otpTimer);
+
+                    // Handle redirect if needed
+                    if (response.data.data && response.data.data.requires_redirect) {
+                        setTimeout(() => {
+                            window.location.href = response.data.data.redirect_url;
+                        }, 2000);
+                    } else {
+                        // Success - redirect to dashboard
+                        toastr.success('Payment completed successfully!');
+                        setTimeout(() => {
+                            window.location.href = '/dashboard/subscriptions';
+                        }, 2000);
+                    }
+
+                    // Save token if new user
+                    if (response.data.data && response.data.data.token) {
+                        localStorage.setItem('auth_token', response.data.data.token);
+                    }
+                }
+            } catch (error) {
+                console.error('Checkout failed:', error);
+                toastr.error(error.response?.data?.message || 'Checkout failed. Please try again.');
+                $('#verifyOtpBtn').prop('disabled', false);
+                $('#otpSpinner').addClass('d-none');
+            }
+        });
+
+        // Resend OTP
+        $('#resendOtpBtn').on('click', async function() {
+            const email = $('#email').val();
+
+            $(this).prop('disabled', true).text('Sending...');
+
+            try {
+                const response = await axios.post('/checkout/send-otp', { email });
+
+                if (response.data.success) {
+                    toastr.success('OTP resent successfully');
+
+                    // Reset timer
+                    const expiresAt = new Date(response.data.expires_at).getTime();
+                    startOtpTimer(expiresAt);
+
+                    // Clear OTP input
+                    $('#otpInput').val('');
+                    $('#verifyOtpBtn').prop('disabled', true);
+                }
+            } catch (error) {
+                toastr.error('Failed to resend OTP. Please try again.');
+            } finally {
+                $(this).prop('disabled', false).text('Resend OTP');
+            }
+        });
+
+        // Process authenticated checkout
+        async function processAuthenticatedCheckout() {
+            // For Stripe, we need to create payment method first
+            if (selectedGateway === 'stripe' && !selectedPaymentMethod) {
+                const paymentMethod = await processStripePayment();
+                if (!paymentMethod) {
+                    $('#submitBtn').prop('disabled', false).html('<i class="fas fa-lock me-2"></i>Complete Purchase');
+                    return;
+                }
+
+                // Add payment method ID to data
+                var paymentMethodId = paymentMethod.id;
+            }
+
+            const data = {
+                plan_id: $('#plan_id').val(),
+                price_id: $('#price_id').val(),
+                payment_method: selectedGateway,
+                gateway: selectedGateway,
+                payment_method_id: $('#payment_method_id').val() || paymentMethodId,
+                payment_details: collectPaymentDetails(),
+                save_payment_method: $('#save_payment_method_checkbox').is(':checked'),
+                terms: $('#terms').is(':checked')
+            };
+
             // Disable submit button
             $('#submitBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Processing...');
+
+            try {
+                const response = await axios.post('/checkout/process-authenticated', data);
+
+                if (response.data.success) {
+                    if (response.data.data && response.data.data.requires_redirect) {
+                        // Redirect to payment gateway
+                        window.location.href = response.data.data.redirect_url;
+                    } else {
+                        // Success
+                        toastr.success('Checkout successful!');
+                        setTimeout(() => {
+                            window.location.href = '/dashboard/subscriptions';
+                        }, 2000);
+                    }
+                }
+            } catch (error) {
+                console.error('Checkout failed:', error);
+                toastr.error(error.response?.data?.message || 'Checkout failed. Please try again.');
+            } finally {
+                $('#submitBtn').prop('disabled', false).html('<i class="fas fa-lock me-2"></i>Complete Purchase');
+            }
+        }
+
+        // Process Stripe payment
+        async function processStripePayment() {
+            if (!stripeCard) {
+                toastr.error('Stripe not initialized. Please try again.', 'Error');
+                return null;
+            }
 
             try {
                 // Create payment method
@@ -814,41 +1162,18 @@
 
                 if (error) {
                     toastr.error(error.message, 'Payment Error');
-                    $('#submitBtn').prop('disabled', false).html('<i class="fas fa-lock me-2"></i>Complete Purchase');
-                    return;
+                    return null;
                 }
 
-                // Add payment method ID to form
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: 'stripe_payment_method',
-                    value: paymentMethod.id
-                }).appendTo('#checkoutForm');
-
-                // Submit form
-                submitForm();
-
+                return paymentMethod;
             } catch (error) {
                 console.error('Stripe error:', error);
                 toastr.error('An error occurred with payment processing', 'Error');
-                $('#submitBtn').prop('disabled', false).html('<i class="fas fa-lock me-2"></i>Complete Purchase');
+                return null;
             }
         }
 
-        function submitForm() {
-           const form = document.getElementById('checkoutForm');
-           const checkoutUrl =  `/checkout/process`;
-           axios.post(checkoutUrl, new FormData(form))
-                .then(response => {
-                    toastr.success('Checkout successful');
-                    window.location.href = '{{ route("dashboard") }}';
-                })
-                .catch(error => {
-                    console.error('Checkout error:', error);
-                    toastr.error(error.response?.data?.message || 'Failed to process checkout');
-                });
-        }
-
+        // Validate form
         function validateForm() {
             // Basic validation
             if (!$('#first_name').val() || !$('#last_name').val() || !$('#email').val()) {
@@ -864,15 +1189,20 @@
                 return false;
             }
 
-            // Check if payment method selected
-            if (!$('input[name="payment_method"]:checked').val()) {
+            // Check if payment method selected (for logged in users using new method)
+            if (isLoggedIn && !selectedPaymentMethod && !selectedGateway) {
+                toastr.error('Please select a payment method', 'Validation Error');
+                return false;
+            }
+
+            // Check if gateway selected (for guests)
+            if (!isLoggedIn && !selectedGateway) {
                 toastr.error('Please select a payment method', 'Validation Error');
                 return false;
             }
 
             // Validate mobile banking fields if applicable
-            let gateway = $('#selected_gateway').val();
-            if (['bkash', 'rocket', 'nagad'].includes(gateway)) {
+            if (['bkash', 'rocket', 'nagad', 'surjopay', 'sslcommerz'].includes(selectedGateway) && !selectedPaymentMethod) {
                 if (!$('#mobile_number').val() || !$('#transaction_id').val()) {
                     toastr.error('Please fill in all mobile banking details', 'Validation Error');
                     return false;
@@ -888,13 +1218,86 @@
             return true;
         }
 
+        // Collect payment details based on gateway
+        function collectPaymentDetails() {
+            const details = {};
+
+            switch (selectedGateway) {
+                case 'stripe':
+                    // Stripe payment method will be handled separately
+                    return {};
+                case 'bkash':
+                case 'rocket':
+                case 'nagad':
+                case 'surjopay':
+                case 'sslcommerz':
+                    details.mobile_number = $('#mobile_number').val();
+                    details.transaction_id = $('#transaction_id').val();
+                    break;
+            }
+
+            return details;
+        }
+
+        // OTP Timer function
+        function startOtpTimer(expiryTime) {
+            if (otpTimer) clearInterval(otpTimer);
+
+            otpTimer = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = expiryTime - now;
+
+                if (distance <= 0) {
+                    clearInterval(otpTimer);
+                    $('#otpTimer').text('00:00');
+                    $('#verifyOtpBtn').prop('disabled', true);
+                    $('#resendOtpBtn').prop('disabled', false);
+                    toastr.warning('OTP expired. Please request a new one.');
+                } else {
+                    const minutes = Math.floor(distance / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    $('#otpTimer').text(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+                }
+            }, 1000);
+        }
+
+        // Helper functions
         function ucfirst(string) {
+            if (!string) return '';
             return string.charAt(0).toUpperCase() + string.slice(1);
         }
 
         function formatMoney(amount) {
             return '$' + parseFloat(amount).toFixed(2);
         }
+
+        function getGatewayIcon(gatewayCode) {
+            const icons = {
+                stripe: 'fab fa-cc-stripe',
+                paypal: 'fab fa-paypal',
+                bkash: 'fas fa-mobile-alt',
+                nagad: 'fas fa-money-bill-wave',
+                rocket: 'fas fa-rocket',
+                surjopay: 'fas fa-bolt',
+                sslcommerz: 'fas fa-lock',
+                bank_transfer: 'fas fa-university',
+                cash: 'fas fa-money-bill-wave',
+                google_pay: 'fab fa-google-pay',
+                apple_pay: 'fab fa-apple-pay',
+                amazon_pay: 'fab fa-amazon-pay'
+            };
+            return icons[gatewayCode] || 'fas fa-credit-card';
+        }
+
+        // Handle modal close
+        $('#otpModal').on('hidden.bs.modal', function () {
+            if (otpTimer) clearInterval(otpTimer);
+            $('#otpInput').val('');
+            $('#verifyOtpBtn').prop('disabled', true);
+            $('#otpSpinner').addClass('d-none');
+            $('#otpStep1').show();
+            $('#otpStep2').hide();
+        });
     });
 </script>
 @endpush

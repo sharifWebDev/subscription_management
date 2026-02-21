@@ -452,7 +452,7 @@
             $('#totalRecords').text(formatNumber(summary.record_count));
 
             const dailyAvg = summary.record_count > 0
-                ? (summary.total_usage / summary.record_count).toFixed(2)
+                ? (summary.total_usage / summary.record_count)
                 : 0;
             $('#dailyAverage').text(formatNumber(dailyAvg));
         }

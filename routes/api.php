@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\DiscountController;
 use App\Http\Controllers\Api\V1\FeatureController;
-use App\Http\Controllers\Api\V1\HkProdUomController;
 use App\Http\Controllers\Api\V1\InvoiceController;
 use App\Http\Controllers\Api\V1\MeteredUsageAggregateController;
 use App\Http\Controllers\Api\V1\PaymentAllocationController;
@@ -276,8 +276,7 @@ Route::middleware('auth:sanctum', 'verified')
 
     });
 
-
-    //================================ website routes =============================
+// ================================ website routes =============================
 Route::prefix('/v1')
     ->group(function () {
         Route::get('/subscription-plans', [PlanController::class, 'index']);
@@ -285,9 +284,33 @@ Route::prefix('/v1')
         Route::get('/subscription-plans/{slug}', [PlanController::class, 'findBySlug']);
         Route::get('/features', [FeatureController::class, 'index']);
 
-        //checkut routes
+        // checkut routes
         Route::post('/checkout/process', [SubscriptionController::class, 'process'])->name('checkout.process');
+
+        Route::post('/checkout/initialize', [CheckoutController::class, 'initialize']);
+        Route::post('/checkout/send-otp', [CheckoutController::class, 'sendOtp']);
+        Route::post('/checkout/verify-otp', [CheckoutController::class, 'verifyOtpAndCheckout']);
+        // Protected checkout routes
+        Route::middleware('auth:sanctum')->post('/checkout/process-authenticated', [CheckoutController::class, 'processAuthenticated']);
     });
+
+// Payment callback routes (public)
+Route::get('/payment/{gateway}/callback', [CheckoutController::class, 'handleCallback'])->name('payment.callback');
+Route::get('/payment/{gateway}/success', [CheckoutController::class, 'handleCallback'])->name('payment.success');
+Route::get('/payment/{gateway}/cancel', [CheckoutController::class, 'handleCallback'])->name('payment.cancel');
+Route::post('/payment/{gateway}/ipn', [CheckoutController::class, 'handleCallback'])->name('payment.ipn');
+
+// Specific gateway callback routes
+Route::get('/payment/paypal/success', [CheckoutController::class, 'handleCallback'])->name('payment.paypal.success');
+Route::get('/payment/paypal/cancel', [CheckoutController::class, 'handleCallback'])->name('payment.paypal.cancel');
+Route::get('/payment/paypal/subscription/success', [CheckoutController::class, 'handleCallback'])->name('payment.paypal.subscription.success');
+
+Route::get('/payment/surjopay/success', [CheckoutController::class, 'handleCallback'])->name('payment.surjopay.success');
+Route::get('/payment/surjopay/fail', [CheckoutController::class, 'handleCallback'])->name('payment.surjopay.fail');
+Route::get('/payment/surjopay/cancel', [CheckoutController::class, 'handleCallback'])->name('payment.surjopay.cancel');
+Route::post('/payment/surjopay/ipn', [CheckoutController::class, 'handleCallback'])->name('payment.surjopay.ipn');
+
+Route::get('/payment/bkash/callback', [CheckoutController::class, 'handleCallback'])->name('payment.bkash.callback');
 
 // Protected API routes
 Route::middleware('auth:sanctum')
@@ -323,8 +346,15 @@ Route::middleware('auth:sanctum')
         Route::get('user/settings', [SubscriptionController::class, 'settings']);
     });
 
-// Public webhook routes
-Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripe']);
-Route::post('/webhooks/paypal', [WebhookController::class, 'handlePayPal']);
-Route::post('/webhooks/bkash', [WebhookController::class, 'handleBkash']);
-Route::post('/webhooks/surjopay', [WebhookController::class, 'handleSurjoPay']);
+    Route::get('/payment-gateways', [PaymentGatewayController::class, 'index']);
+
+Route::prefix('/v1')
+    ->group(function () {
+        // Public webhook routes
+        Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripe']);
+        Route::post('/webhooks/paypal', [WebhookController::class, 'handlePayPal']);
+        Route::post('/webhooks/bkash', [WebhookController::class, 'handleBkash']);
+        Route::post('/webhooks/surjopay', [WebhookController::class, 'handleSurjoPay']);
+        //sslcommerz
+        Route::post('/webhooks/sslcommerz', [WebhookController::class, 'handleSslCommerz']);
+    });

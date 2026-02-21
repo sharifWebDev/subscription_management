@@ -36,4 +36,10 @@ class SubscriptionOrder extends Model
     {
         return $this->belongsTo(\App\Models\PaymentMaster::class, 'payment_master_id');
     }
+
+    // item
+    public function items()
+    {
+        return $this->hasMany(\App\Models\SubscriptionOrderItem::class, 'subscription_order_id');
+    }
 }
