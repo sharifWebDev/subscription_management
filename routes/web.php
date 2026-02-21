@@ -21,15 +21,10 @@ Route::middleware([
 
 // Website routes
 Route::prefix('/')->name('website.')->group(function () {
-    // Plan listing page
     Route::get('/plans', [PlanViewController::class, 'index'])->name('plans.index');
-
-    // Plan details page
     Route::get('/plan/{slug}', [PlanViewController::class, 'show'])->name('plan.show');
-
     // Checkout page
     Route::get('/checkout/{plan_id}', [CheckoutViewController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout/process', [CheckoutViewController::class, 'process'])->name('checkout.process');
 });
 
 Route::middleware(['auth'])->prefix('dashboard')

@@ -38,8 +38,8 @@
                             <h4 class="mb-0">Payment Information</h4>
                         </div>
                         <div class="card-body p-4">
-                            <form action="{{ route('website.checkout.process') }}" method="POST" id="checkoutForm">
-                                @csrf
+                            <form action="javascript:void(0);" id="checkoutForm">
+
                                 <input type="hidden" name="plan_id" id="plan_id" value="{{ $plan_id }}">
                                 <input type="hidden" name="price_id" id="price_id" value="">
                                 <input type="hidden" name="gateway" id="selected_gateway" value="">
@@ -836,8 +836,17 @@
         }
 
         function submitForm() {
-            // Submit the form normally
-            document.getElementById('checkoutForm').submit();
+           const form = document.getElementById('checkoutForm');
+           const checkoutUrl =  `/checkout/process`;
+           axios.post(checkoutUrl, new FormData(form))
+                .then(response => {
+                    toastr.success('Checkout successful');
+                    window.location.href = '{{ route("dashboard") }}';
+                })
+                .catch(error => {
+                    console.error('Checkout error:', error);
+                    toastr.error(error.response?.data?.message || 'Failed to process checkout');
+                });
         }
 
         function validateForm() {

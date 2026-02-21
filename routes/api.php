@@ -284,6 +284,9 @@ Route::prefix('/v1')
         Route::get('/plans/{id}', [PlanController::class, 'find']);
         Route::get('/subscription-plans/{slug}', [PlanController::class, 'findBySlug']);
         Route::get('/features', [FeatureController::class, 'index']);
+
+        //checkut routes
+        Route::post('/checkout/process', [SubscriptionController::class, 'process'])->name('checkout.process');
     });
 
 // Protected API routes

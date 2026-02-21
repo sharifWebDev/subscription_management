@@ -525,4 +525,28 @@ class SubscriptionController extends Controller
             'data' => $data,
         ]);
     }
+
+    /**
+     * Process checkout.
+     */
+    public function process(Request $request)
+    {
+        $request->validate([
+            'plan_id' => 'required',
+            'price_id' => 'required',
+            'payment_method' => 'required|in:card,paypal,bank_transfer',
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'terms' => 'required|accepted',
+        ]);
+
+        // Here you would typically call your API to create the subscription
+        // For now, we'll redirect to success page
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Subscription created successfully',
+        ]);
+    }
 }
