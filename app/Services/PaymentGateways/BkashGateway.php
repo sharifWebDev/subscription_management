@@ -48,12 +48,11 @@ class BkashGateway
         if (! $response->successful()) {
             throw new Exception('Failed to get bKash token');
         }
-        \Log::info('bKash token: ',['token' => $response->json()]);
+        \Log::info('bKash token: ', ['token' => $response->json()]);
 
         // if (app()->environment('local')) {
-            $this->token = 'fef3feqwsf';
+        $this->token = 'fef3feqwsf';
         // }
-
 
         // $this->token = $response->json()['id_token'];
 

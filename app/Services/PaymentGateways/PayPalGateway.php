@@ -3,17 +3,20 @@
 namespace App\Services\PaymentGateways;
 
 use App\Models\PaymentGateway;
-use App\Models\PaymentTransaction;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Exception;
 
 class PayPalGateway
 {
     protected $config;
+
     protected $accessToken;
+
     protected $baseUrl;
+
     protected $clientId;
+
     protected $clientSecret;
 
     public function __construct()
@@ -22,7 +25,7 @@ class PayPalGateway
             ->where('is_active', true)
             ->first();
 
-        if (!$this->config) {
+        if (! $this->config) {
             throw new Exception('PayPal gateway not configured. Please add PayPal to your payment_gateways table.');
         }
 
@@ -30,11 +33,11 @@ class PayPalGateway
         $this->clientSecret = $this->config->api_secret;
         $this->baseUrl = $this->config->base_url ?? 'https://api-m.sandbox.paypal.com';
 
-        if (!$this->clientId) {
+        if (! $this->clientId) {
             throw new Exception('PayPal Client ID not configured');
         }
 
-        if (!$this->clientSecret) {
+        if (! $this->clientSecret) {
             throw new Exception('PayPal Client Secret not configured');
         }
     }
@@ -49,30 +52,30 @@ class PayPalGateway
         }
 
         try {
-            $auth = base64_encode($this->clientId . ':' . $this->clientSecret);
+            $auth = base64_encode($this->clientId.':'.$this->clientSecret);
 
             Log::info('Requesting PayPal access token', [
-                'url' => $this->baseUrl . '/v1/oauth2/token'
+                'url' => $this->baseUrl.'/v1/oauth2/token',
             ]);
 
             $response = Http::withHeaders([
-                'Authorization' => 'Basic ' . $auth,
-                'Content-Type' => 'application/x-www-form-urlencoded'
-            ])->timeout(30)->asForm()->post($this->baseUrl . '/v1/oauth2/token', [
-                'grant_type' => 'client_credentials'
+                'Authorization' => 'Basic '.$auth,
+                'Content-Type' => 'application/x-www-form-urlencoded',
+            ])->timeout(30)->asForm()->post($this->baseUrl.'/v1/oauth2/token', [
+                'grant_type' => 'client_credentials',
             ]);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('PayPal token error response', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
-                throw new Exception('Failed to get PayPal access token: ' . $response->body());
+                throw new Exception('Failed to get PayPal access token: '.$response->body());
             }
 
             $data = $response->json();
 
-            if (!isset($data['access_token'])) {
+            if (! isset($data['access_token'])) {
                 throw new Exception('PayPal response missing access_token');
             }
 
@@ -83,8 +86,8 @@ class PayPalGateway
             return $this->accessToken;
 
         } catch (Exception $e) {
-            Log::error('PayPal token error: ' . $e->getMessage());
-            throw new Exception('PayPal authentication failed: ' . $e->getMessage());
+            Log::error('PayPal token error: '.$e->getMessage());
+            throw new Exception('PayPal authentication failed: '.$e->getMessage());
         }
     }
 
@@ -104,14 +107,14 @@ class PayPalGateway
                         'description' => $data['description'] ?? 'Subscription Payment',
                         'amount' => [
                             'currency_code' => $data['currency'],
-                            'value' => number_format($data['amount'], 2, '.', '')
+                            'value' => number_format($data['amount'], 2, '.', ''),
                         ],
                         'custom_id' => json_encode([
                             'payment_master_id' => $data['payment_master_id'],
                             'plan_id' => $data['plan_id'] ?? null,
-                            'user_id' => $data['user_id'] ?? null
-                        ])
-                    ]
+                            'user_id' => $data['user_id'] ?? null,
+                        ]),
+                    ],
                 ],
                 'application_context' => [
                     'brand_name' => config('app.name'),
@@ -119,8 +122,8 @@ class PayPalGateway
                     'shipping_preference' => 'NO_SHIPPING',
                     'user_action' => 'PAY_NOW',
                     'return_url' => route('payment.paypal.success'),
-                    'cancel_url' => route('payment.paypal.cancel')
-                ]
+                    'cancel_url' => route('payment.paypal.cancel'),
+                ],
             ];
 
             // Add payer info if available
@@ -129,28 +132,28 @@ class PayPalGateway
                     'email_address' => $data['email'],
                     'name' => [
                         'given_name' => $data['first_name'] ?? '',
-                        'surname' => $data['last_name'] ?? ''
-                    ]
+                        'surname' => $data['last_name'] ?? '',
+                    ],
                 ];
             }
 
             Log::info('Creating PayPal order', [
                 'amount' => $data['amount'],
-                'currency' => $data['currency']
+                'currency' => $data['currency'],
             ]);
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $accessToken,
+                'Authorization' => 'Bearer '.$accessToken,
                 'Content-Type' => 'application/json',
-                'Prefer' => 'return=representation'
-            ])->timeout(30)->post($this->baseUrl . '/v2/checkout/orders', $orderData);
+                'Prefer' => 'return=representation',
+            ])->timeout(30)->post($this->baseUrl.'/v2/checkout/orders', $orderData);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('PayPal order creation failed', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
-                throw new Exception('PayPal order creation failed: ' . $response->body());
+                throw new Exception('PayPal order creation failed: '.$response->body());
             }
 
             $order = $response->json();
@@ -164,27 +167,28 @@ class PayPalGateway
                 }
             }
 
-            if (!$approvalLink) {
+            if (! $approvalLink) {
                 throw new Exception('No approval link found in PayPal response');
             }
 
             Log::info('PayPal order created successfully', [
                 'order_id' => $order['id'],
-                'status' => $order['status']
+                'status' => $order['status'],
             ]);
 
             return [
                 'success' => true,
                 'order_id' => $order['id'],
                 'approval_url' => $approvalLink,
-                'status' => $order['status']
+                'status' => $order['status'],
             ];
 
         } catch (Exception $e) {
-            Log::error('PayPal order creation failed: ' . $e->getMessage());
+            Log::error('PayPal order creation failed: '.$e->getMessage());
+
             return [
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ];
         }
     }
@@ -200,17 +204,17 @@ class PayPalGateway
             Log::info('Capturing PayPal order', ['order_id' => $orderId]);
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $accessToken,
+                'Authorization' => 'Bearer '.$accessToken,
                 'Content-Type' => 'application/json',
-                'Prefer' => 'return=representation'
-            ])->timeout(30)->post($this->baseUrl . "/v2/checkout/orders/{$orderId}/capture");
+                'Prefer' => 'return=representation',
+            ])->timeout(30)->post($this->baseUrl."/v2/checkout/orders/{$orderId}/capture");
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('PayPal capture failed', [
                     'status' => $response->status(),
-                    'body' => $response->body()
+                    'body' => $response->body(),
                 ]);
-                throw new Exception('PayPal capture failed: ' . $response->body());
+                throw new Exception('PayPal capture failed: '.$response->body());
             }
 
             $capture = $response->json();
@@ -229,7 +233,7 @@ class PayPalGateway
 
             Log::info('PayPal order captured successfully', [
                 'order_id' => $orderId,
-                'capture_id' => $captureId
+                'capture_id' => $captureId,
             ]);
 
             return [
@@ -239,14 +243,15 @@ class PayPalGateway
                 'status' => $capture['status'],
                 'amount' => $amount,
                 'currency' => $currency,
-                'full_response' => $capture
+                'full_response' => $capture,
             ];
 
         } catch (Exception $e) {
-            Log::error('PayPal capture failed: ' . $e->getMessage());
+            Log::error('PayPal capture failed: '.$e->getMessage());
+
             return [
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ];
         }
     }
@@ -265,9 +270,9 @@ class PayPalGateway
                 'subscriber' => [
                     'name' => [
                         'given_name' => $data['first_name'] ?? '',
-                        'surname' => $data['last_name'] ?? ''
+                        'surname' => $data['last_name'] ?? '',
                     ],
-                    'email_address' => $data['email']
+                    'email_address' => $data['email'],
                 ],
                 'application_context' => [
                     'brand_name' => config('app.name'),
@@ -275,17 +280,17 @@ class PayPalGateway
                     'shipping_preference' => 'NO_SHIPPING',
                     'user_action' => 'SUBSCRIBE_NOW',
                     'return_url' => route('payment.paypal.subscription.success'),
-                    'cancel_url' => route('payment.paypal.cancel')
-                ]
+                    'cancel_url' => route('payment.paypal.cancel'),
+                ],
             ];
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $accessToken,
-                'Content-Type' => 'application/json'
-            ])->timeout(30)->post($this->baseUrl . '/v1/billing/subscriptions', $subscriptionData);
+                'Authorization' => 'Bearer '.$accessToken,
+                'Content-Type' => 'application/json',
+            ])->timeout(30)->post($this->baseUrl.'/v1/billing/subscriptions', $subscriptionData);
 
-            if (!$response->successful()) {
-                throw new Exception('PayPal subscription creation failed: ' . $response->body());
+            if (! $response->successful()) {
+                throw new Exception('PayPal subscription creation failed: '.$response->body());
             }
 
             $subscription = $response->json();
@@ -303,14 +308,15 @@ class PayPalGateway
                 'success' => true,
                 'subscription_id' => $subscription['id'],
                 'approval_url' => $approvalLink,
-                'status' => $subscription['status']
+                'status' => $subscription['status'],
             ];
 
         } catch (Exception $e) {
-            Log::error('PayPal subscription creation failed: ' . $e->getMessage());
+            Log::error('PayPal subscription creation failed: '.$e->getMessage());
+
             return [
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ];
         }
     }
@@ -324,24 +330,25 @@ class PayPalGateway
             $accessToken = $this->getAccessToken();
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $accessToken,
-                'Content-Type' => 'application/json'
-            ])->timeout(30)->get($this->baseUrl . "/v2/checkout/orders/{$orderId}");
+                'Authorization' => 'Bearer '.$accessToken,
+                'Content-Type' => 'application/json',
+            ])->timeout(30)->get($this->baseUrl."/v2/checkout/orders/{$orderId}");
 
-            if (!$response->successful()) {
-                throw new Exception('Failed to get PayPal order: ' . $response->body());
+            if (! $response->successful()) {
+                throw new Exception('Failed to get PayPal order: '.$response->body());
             }
 
             return [
                 'success' => true,
-                'order' => $response->json()
+                'order' => $response->json(),
             ];
 
         } catch (Exception $e) {
-            Log::error('PayPal get order failed: ' . $e->getMessage());
+            Log::error('PayPal get order failed: '.$e->getMessage());
+
             return [
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ];
         }
     }
@@ -349,7 +356,7 @@ class PayPalGateway
     /**
      * Process refund
      */
-    public function refund(string $captureId, float $amount = null): array
+    public function refund(string $captureId, ?float $amount = null): array
     {
         try {
             $accessToken = $this->getAccessToken();
@@ -358,17 +365,17 @@ class PayPalGateway
             if ($amount) {
                 $data['amount'] = [
                     'value' => number_format($amount, 2, '.', ''),
-                    'currency_code' => 'USD' // You might want to make this dynamic
+                    'currency_code' => 'USD', // You might want to make this dynamic
                 ];
             }
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $accessToken,
-                'Content-Type' => 'application/json'
-            ])->timeout(30)->post($this->baseUrl . "/v2/payments/captures/{$captureId}/refund", $data);
+                'Authorization' => 'Bearer '.$accessToken,
+                'Content-Type' => 'application/json',
+            ])->timeout(30)->post($this->baseUrl."/v2/payments/captures/{$captureId}/refund", $data);
 
-            if (!$response->successful()) {
-                throw new Exception('PayPal refund failed: ' . $response->body());
+            if (! $response->successful()) {
+                throw new Exception('PayPal refund failed: '.$response->body());
             }
 
             $refund = $response->json();
@@ -378,14 +385,15 @@ class PayPalGateway
                 'refund_id' => $refund['id'],
                 'amount' => $refund['amount']['value'],
                 'status' => $refund['status'],
-                'full_response' => $refund
+                'full_response' => $refund,
             ];
 
         } catch (Exception $e) {
-            Log::error('PayPal refund failed: ' . $e->getMessage());
+            Log::error('PayPal refund failed: '.$e->getMessage());
+
             return [
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ];
         }
     }
@@ -399,8 +407,9 @@ class PayPalGateway
         // This is a simplified version - you should implement proper verification
         $webhookId = $this->config->webhook_id ?? null;
 
-        if (!$webhookId) {
+        if (! $webhookId) {
             Log::warning('PayPal webhook ID not configured');
+
             return true;
         }
 

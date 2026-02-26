@@ -137,7 +137,7 @@ Route::middleware('auth:sanctum', 'verified')
         Route::prefix('/payment-gateways')
             ->controller(PaymentGatewayController::class)
             ->group(function () {
-                Route::get('/', 'index');
+                // Route::get('/', 'index');
                 Route::post('/', 'store');
                 Route::get('/{id}', 'find');
                 Route::put('/update/{id}', 'update');
@@ -346,15 +346,21 @@ Route::middleware('auth:sanctum')
         Route::get('user/settings', [SubscriptionController::class, 'settings']);
     });
 
-    Route::get('/payment-gateways', [PaymentGatewayController::class, 'index']);
-
 Route::prefix('/v1')
     ->group(function () {
+        Route::get('/payment-gateways', [PaymentGatewayController::class, 'index']);
         // Public webhook routes
         Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripe']);
         Route::post('/webhooks/paypal', [WebhookController::class, 'handlePayPal']);
         Route::post('/webhooks/bkash', [WebhookController::class, 'handleBkash']);
         Route::post('/webhooks/surjopay', [WebhookController::class, 'handleSurjoPay']);
-        //sslcommerz
+        // sslcommerz
         Route::post('/webhooks/sslcommerz', [WebhookController::class, 'handleSslCommerz']);
+    });
+
+// stripe
+Route::middleware('auth:sanctum')
+    ->prefix('/v1')
+    ->group(function () {
+        Route::post('/checkout/confirm-stripe', [CheckoutController::class, 'confirmStripePayment']);
     });

@@ -38,6 +38,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'billing_type',
+        'stripe_customer_id',
         'tax_id',
         'is_tax_exempt',
         'tax_certificate',

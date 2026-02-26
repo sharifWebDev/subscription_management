@@ -305,5 +305,31 @@
         toastr.error('{{ session('error') }}', 'Error');
     </script>
     @endif
+
+    <script>
+        // Handle payment status from query parameters
+        $(document).ready(function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentStatus = urlParams.get('payment_status');
+
+            if (paymentStatus === 'success') {
+                toastr.success('Payment successful! Your subscription is now active.', 'Success');
+                // Clean up URL
+                const url = new URL(window.location);
+                url.searchParams.delete('payment_status');
+                window.history.replaceState({}, document.title, url);
+            } else if (paymentStatus === 'failed') {
+                toastr.error('Payment failed. Please try again.', 'Error');
+                const url = new URL(window.location);
+                url.searchParams.delete('payment_status');
+                window.history.replaceState({}, document.title, url);
+            } else if (paymentStatus === 'cancelled') {
+                toastr.info('Payment was cancelled.', 'Information');
+                const url = new URL(window.location);
+                url.searchParams.delete('payment_status');
+                window.history.replaceState({}, document.title, url);
+            }
+        });
+    </script>
 </body>
 </html>
