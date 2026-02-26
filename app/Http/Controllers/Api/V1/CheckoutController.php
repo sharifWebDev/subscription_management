@@ -303,6 +303,9 @@ class CheckoutController extends Controller
 /**
  * Process authenticated checkout (logged in user)
  */
+/**
+ * Process authenticated checkout (logged in user)
+ */
 public function processAuthenticated(Request $request): JsonResponse
 {
     $validator = Validator::make($request->all(), [
@@ -323,6 +326,8 @@ public function processAuthenticated(Request $request): JsonResponse
         ], 422);
     }
 
+    // dd($request->all());
+
     DB::beginTransaction();
 
     try {
@@ -342,8 +347,9 @@ public function processAuthenticated(Request $request): JsonResponse
             throw new Exception($paymentResult['message'] ?? 'Payment processing failed');
         }
 
-        // If payment is immediately successful, create subscription
+        // If payment is successful (no 3D Secure required)
         if ($paymentResult['status'] === 'completed') {
+            // Create subscription
             $subscription = $this->createSubscription($user, $order, $request, $paymentMaster);
 
             // Update order with subscription
@@ -375,32 +381,6 @@ public function processAuthenticated(Request $request): JsonResponse
                     'status' => 'completed',
                 ],
             ]);
-        }
-
-        // For payments that require further action (like 3D Secure)
-        if ($paymentResult['status'] === 'requires_action') {
-            DB::commit();
-
-            $response = [
-                'success' => true,
-                'message' => 'Payment requires authentication',
-                'data' => [
-                    'order_id' => $order->id,
-                    'payment_master_id' => $paymentMaster->id,
-                    'requires_action' => true,
-                    'status' => 'requires_action',
-                    'client_secret' => $paymentResult['client_secret'] ?? null,
-                    'payment_intent_id' => $paymentResult['payment_intent_id'] ?? null,
-                    'transaction_id' => $paymentResult['transaction_id'] ?? null,
-                ],
-            ];
-
-            // Add redirect URL if needed (for gateways that redirect)
-            if (isset($paymentResult['redirect_url'])) {
-                $response['data']['redirect_url'] = $paymentResult['redirect_url'];
-            }
-
-            return response()->json($response);
         }
 
         // For pending payments (like bank transfers)
@@ -546,67 +526,81 @@ protected function processGatewayPayment(PaymentMaster $paymentMaster, Subscript
     }
 }
 
-    /**
-     * Process Stripe payment
-     */
 /**
  * Process Stripe payment
  */
 protected function processStripePayment(array $data, Request $request): array
 {
     try {
-        // Case 1: Using saved payment method ID
+        // Get existing Stripe customer ID from user's payment methods
+        $existingPaymentMethod = PaymentMethod::where('user_id', $request->user()->id)
+            ->where('gateway', 'stripe')
+            ->whereNotNull('gateway_customer_id')
+            ->first();
+
+        $stripeCustomerId = $existingPaymentMethod ? $existingPaymentMethod->gateway_customer_id : null;
+
+        // Add customer data to payment data
+        $paymentData = array_merge($data, [
+            'customer_id' => $stripeCustomerId,
+            'email' => $request->user()->email,
+            'name' => $request->name ?? $request->user()->name,
+            'phone' => $request->phone ?? $request->user()->phone,
+            'user_id' => $request->user()->id,
+        ]);
+
+        // If using saved payment method
         if ($request->payment_method_id) {
-            $result = $this->stripeGateway->createPaymentIntentWithSavedMethod($data, $request->payment_method_id);
+            $result = $this->stripeGateway->createPaymentIntentWithSavedMethod($paymentData, $request->payment_method_id);
         }
-        // Case 2: Confirming existing payment intent
-        elseif (isset($request->payment_details['payment_intent_id']) && isset($request->payment_details['payment_method_id'])) {
-            $result = $this->stripeGateway->confirmPaymentIntent(
-                $request->payment_details['payment_intent_id'],
-                $request->payment_details['payment_method_id']
-            );
-        }
-        // Case 3: Creating new payment intent with payment method from details
+        // If using new card
         elseif (isset($request->payment_details['payment_method_id'])) {
-            $result = $this->stripeGateway->createPaymentIntentWithSavedMethod($data, $request->payment_details['payment_method_id']);
+            $result = $this->stripeGateway->createPaymentIntentWithSavedMethod($paymentData, $request->payment_details['payment_method_id']);
         }
-        // Case 4: Creating new payment intent (will be confirmed via client)
         else {
-            $result = $this->stripeGateway->createPaymentIntent($data);
+            $result = $this->stripeGateway->createPaymentIntent($paymentData);
         }
 
         if (!$result['success']) {
             return $result;
         }
 
+        // Get payment method details
+        $paymentMethodDetails = null;
+        if (isset($result['payment_method_id'])) {
+            $pmResult = $this->stripeGateway->retrievePaymentMethod($result['payment_method_id']);
+            if ($pmResult['success']) {
+                $pm = $pmResult['payment_method'];
+                $paymentMethodDetails = [
+                    'id' => $pm->id,
+                    'card_brand' => $pm->card->brand ?? null,
+                    'card_last4' => $pm->card->last4 ?? null,
+                    'card_exp_month' => $pm->card->exp_month ?? null,
+                    'card_exp_year' => $pm->card->exp_year ?? null,
+                    'customer_id' => $pm->customer ?? ($result['customer_id'] ?? null),
+                ];
+            }
+        }
+
         // Create transaction
         $transaction = PaymentTransaction::create([
             'payment_master_id' => $data['payment_master_id'],
             'user_id' => $data['user_id'],
-            'transaction_id' => $result['intent_id'] ?? ($result['intent']->id ?? null),
+            'transaction_id' => $result['intent_id'],
             'type' => 'payment',
             'payment_method' => 'card',
             'payment_gateway' => 'stripe',
             'amount' => $data['amount'],
             'currency' => $data['currency'],
-            'status' => $result['status'] ?? 'requires_confirmation',
+            'status' => $result['status'] === 'completed' ? 'completed' : 'pending',
             'gateway_response' => json_encode($result),
+            'gateway_customer_id' => $result['customer_id'] ?? ($paymentMethodDetails['customer_id'] ?? null),
+            'gateway_payment_method_id' => $result['payment_method_id'] ?? ($paymentMethodDetails['id'] ?? null),
             'initiated_at' => Carbon::now(),
+            'completed_at' => $result['status'] === 'completed' ? Carbon::now() : null,
         ]);
 
-        // If client secret is returned (requires action on client side)
-        if (isset($result['client_secret'])) {
-            return [
-                'success' => true,
-                'status' => 'requires_action',
-                'requires_redirect' => false,
-                'client_secret' => $result['client_secret'],
-                'payment_intent_id' => $transaction->transaction_id,
-                'transaction_id' => $transaction->id,
-            ];
-        }
-
-        // If payment is already completed
+        // If payment is completed
         if ($result['status'] === 'completed') {
             // Update payment master
             $paymentMaster = PaymentMaster::find($data['payment_master_id']);
@@ -614,34 +608,37 @@ protected function processStripePayment(array $data, Request $request): array
                 'status' => 'paid',
                 'paid_amount' => $data['amount'],
                 'paid_at' => Carbon::now(),
+                'gateway_customer_id' => $result['customer_id'] ?? null,
             ]);
 
-            $transaction->update([
+            return [
+                'success' => true,
                 'status' => 'completed',
-                'completed_at' => Carbon::now(),
-            ]);
+                'transaction_id' => $transaction->id,
+                'payment_method_id' => $result['payment_method_id'] ?? ($paymentMethodDetails['id'] ?? null),
+                'customer_id' => $result['customer_id'] ?? ($paymentMethodDetails['customer_id'] ?? null),
+                'payment_method_details' => $paymentMethodDetails,
+            ];
         }
 
+        // If payment requires action (should not happen with confirm=true)
         return [
-            'success' => true,
+            'success' => false,
+            'message' => 'Payment requires additional authentication',
             'status' => $result['status'],
-            'transaction_id' => $transaction->id,
-            'payment_method_id' => $result['payment_method_id'] ?? null,
         ];
 
     } catch (Exception $e) {
         Log::error('Stripe payment processing error: ' . $e->getMessage(), [
             'trace' => $e->getTraceAsString(),
-            'data' => $data
         ]);
 
         return [
             'success' => false,
-            'message' => 'Stripe payment processing failed: ' . $e->getMessage(),
+            'message' => 'Stripe payment failed: ' . $e->getMessage(),
         ];
     }
 }
-
     /**
      * Process PayPal payment
      */
@@ -967,8 +964,7 @@ protected function processStripePayment(array $data, Request $request): array
         ];
     }
 
-
-    /**
+/**
  * Confirm Stripe payment after 3D Secure
  */
 public function confirmStripePayment(Request $request): JsonResponse
@@ -998,7 +994,83 @@ public function confirmStripePayment(Request $request): JsonResponse
             throw new Exception('Transaction not found');
         }
 
-        // Confirm the payment with Stripe
+        // First retrieve the payment intent to check status
+        $paymentIntent = \Stripe\PaymentIntent::retrieve($request->payment_intent_id);
+
+        // If already succeeded, no need to confirm again
+        if ($paymentIntent->status === 'succeeded') {
+            DB::beginTransaction();
+
+            // Update transaction
+            $transaction->update([
+                'status' => 'completed',
+                'completed_at' => Carbon::now(),
+                'gateway_response' => json_encode(['payment_intent' => $paymentIntent]),
+                'gateway_customer_id' => $paymentIntent->customer,
+                'gateway_payment_method_id' => $paymentIntent->payment_method,
+            ]);
+
+            // Update payment master
+            $paymentMaster = $transaction->paymentMaster;
+            $paymentMaster->update([
+                'status' => 'paid',
+                'paid_amount' => $transaction->amount,
+                'paid_at' => Carbon::now(),
+                'gateway_customer_id' => $paymentIntent->customer,
+            ]);
+
+            // Activate subscription
+            $metadata = json_decode($paymentMaster->metadata ?? '{}', true);
+            $orderId = $metadata['order_id'] ?? null;
+
+            $subscriptionId = null;
+            if ($orderId) {
+                $order = SubscriptionOrder::with('items')->find($orderId);
+                if ($order && !$order->processed_at) {
+                    $subscription = $this->activateOrderSubscription($order, $paymentMaster);
+                    $subscriptionId = $subscription->id ?? null;
+                }
+            }
+
+            // Save payment method if user wants to save it
+            if ($request->boolean('save_payment_method') && $paymentIntent->payment_method) {
+                // Get payment method details
+                try {
+                    $pm = \Stripe\PaymentMethod::retrieve($paymentIntent->payment_method);
+                    $paymentResult = [
+                        'payment_method_id' => $pm->id,
+                        'customer_id' => $pm->customer,
+                        'card_brand' => $pm->card->brand ?? null,
+                        'card_last4' => $pm->card->last4 ?? null,
+                        'card_exp_month' => $pm->card->exp_month ?? null,
+                        'card_exp_year' => $pm->card->exp_year ?? null,
+                    ];
+
+                    $request->merge([
+                        'payment_method' => 'stripe',
+                        'gateway' => 'stripe',
+                    ]);
+
+                    $this->savePaymentMethod($user, $paymentResult, $request);
+                } catch (Exception $e) {
+                    Log::warning('Could not save payment method', ['error' => $e->getMessage()]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment confirmed successfully',
+                'data' => [
+                    'subscription_id' => $subscriptionId,
+                    'order_id' => $orderId,
+                    'transaction_id' => $transaction->id,
+                ],
+            ]);
+        }
+
+        // If not succeeded, try to confirm
         $result = $this->stripeGateway->confirmPaymentIntent($request->payment_intent_id);
 
         if (!$result['success']) {
@@ -1013,6 +1085,8 @@ public function confirmStripePayment(Request $request): JsonResponse
                 'status' => 'completed',
                 'completed_at' => Carbon::now(),
                 'gateway_response' => json_encode($result),
+                'gateway_customer_id' => $result['customer_id'] ?? null,
+                'gateway_payment_method_id' => $result['payment_method_id'] ?? null,
             ]);
 
             // Update payment master
@@ -1021,6 +1095,7 @@ public function confirmStripePayment(Request $request): JsonResponse
                 'status' => 'paid',
                 'paid_amount' => $transaction->amount,
                 'paid_at' => Carbon::now(),
+                'gateway_customer_id' => $result['customer_id'] ?? null,
             ]);
 
             // Activate subscription
@@ -1038,12 +1113,21 @@ public function confirmStripePayment(Request $request): JsonResponse
 
             // Save payment method if user wants to save it
             if ($request->boolean('save_payment_method') && isset($result['payment_method_id'])) {
-                //request merge type, gateway
+                $paymentResult = [
+                    'payment_method_id' => $result['payment_method_id'],
+                    'customer_id' => $result['customer_id'] ?? null,
+                    'card_brand' => $result['payment_method_details']['card_brand'] ?? null,
+                    'card_last4' => $result['payment_method_details']['card_last4'] ?? null,
+                    'card_exp_month' => $result['payment_method_details']['card_exp_month'] ?? null,
+                    'card_exp_year' => $result['payment_method_details']['card_exp_year'] ?? null,
+                ];
+
                 $request->merge([
                     'payment_method' => 'stripe',
                     'gateway' => 'stripe',
                 ]);
-                $this->savePaymentMethod($user, $result, $request);
+
+                $this->savePaymentMethod($user, $paymentResult, $request);
             }
 
             DB::commit();
@@ -2002,47 +2086,68 @@ public function confirmStripePayment(Request $request): JsonResponse
         return null;
     }
 
-    /**
-     * Save payment method for future use
-     */
-    protected function savePaymentMethod(User $user, array $paymentResult, Request $request): void
-    {
-        PaymentMethod::create([
-            'user_id' => $user->id,
-            'type' => $request->payment_method,
-            'gateway' => $request->gateway,
-            'gateway_customer_id' => $paymentResult['customer_id'] ?? null,
-            'gateway_payment_method_id' => $paymentResult['payment_method_id'] ?? null,
-            'is_default' => !PaymentMethod::where('user_id', $user->id)->exists(),
-            'is_verified' => true,
-            'card_brand' => $paymentResult['card_brand'] ?? null,
-            'card_last4' => $paymentResult['card_last4'] ?? null,
-            'card_exp_month' => $paymentResult['card_exp_month'] ?? null,
-            'card_exp_year' => $paymentResult['card_exp_year'] ?? null,
-            'metadata' => json_encode($request->payment_details ?? []),
-            'gateway_metadata' => json_encode($paymentResult),
+/**
+ * Save payment method for future use
+ */
+protected function savePaymentMethod(User $user, array $paymentResult, Request $request): void
+{
+    $existing = PaymentMethod::where('user_id', $user->id)
+        ->where('gateway', $request->gateway)
+        ->where('gateway_payment_method_id', $paymentResult['payment_method_id'] ?? null)
+        ->first();
+
+    if ($existing) {
+        $existing->update([
             'last_used_at' => Carbon::now(),
-            'usage_count' => 1,
-            'card_country' => $paymentResult['card_country'] ?? null,
-            'bank_name' => $paymentResult['bank_name'] ?? null,
-            'bank_account_last4' => $paymentResult['bank_account_last4'] ?? null,
-            'bank_account_type' => $paymentResult['bank_account_type'] ?? null,
-            'bank_routing_number' => $paymentResult['bank_routing_number'] ?? null,
-            'wallet_type' => $paymentResult['wallet_type'] ?? null,
-            'wallet_number' => $paymentResult['wallet_number'] ?? null,
-            'crypto_currency' => $paymentResult['crypto_currency'] ?? null,
-            'crypto_address' => $paymentResult['crypto_address'] ?? null,
-            'encrypted_data' => $paymentResult['encrypted_data'] ?? null,
-            'fingerprint' => $paymentResult['fingerprint'] ?? null,
-            'is_compromised' => $paymentResult['is_compromised'] ?? false,
-            'metadata' => json_encode($request->metadata ?? []),
-            'gateway_metadata' => json_encode($paymentResult),
-            'verified_at' => Carbon::now(),
-            'verified_by' => auth()->id() ?? null,
-            'created_by' => auth()->id() ?? null,
-            'updated_by' => auth()->id() ?? null,
+            'usage_count' => $existing->usage_count + 1,
+            'gateway_customer_id' => $paymentResult['customer_id'] ?? $existing->gateway_customer_id,
         ]);
+        return;
     }
+
+    // Check if this customer ID already exists for another payment method
+    if (isset($paymentResult['customer_id']) && !empty($paymentResult['customer_id'])) {
+        // Update any existing payment methods without customer ID
+        PaymentMethod::where('user_id', $user->id)
+            ->where('gateway', $request->gateway)
+            ->whereNull('gateway_customer_id')
+            ->update(['gateway_customer_id' => $paymentResult['customer_id']]);
+    }
+
+    PaymentMethod::create([
+        'user_id' => $user->id,
+        'type' => $request->payment_method,
+        'gateway' => $request->gateway,
+        'gateway_customer_id' => $paymentResult['customer_id'] ?? null,
+        'gateway_payment_method_id' => $paymentResult['payment_method_id'] ?? null,
+        'is_default' => !PaymentMethod::where('user_id', $user->id)->exists(),
+        'is_verified' => true,
+        'card_brand' => $paymentResult['card_brand'] ?? null,
+        'card_last4' => $paymentResult['card_last4'] ?? null,
+        'card_exp_month' => $paymentResult['card_exp_month'] ?? null,
+        'card_exp_year' => $paymentResult['card_exp_year'] ?? null,
+        'metadata' => json_encode($request->payment_details ?? []),
+        'gateway_metadata' => json_encode($paymentResult),
+        'last_used_at' => Carbon::now(),
+        'usage_count' => 1,
+        'card_country' => $paymentResult['card_country'] ?? null,
+        'bank_name' => $paymentResult['bank_name'] ?? null,
+        'bank_account_last4' => $paymentResult['bank_account_last4'] ?? null,
+        'bank_account_type' => $paymentResult['bank_account_type'] ?? null,
+        'bank_routing_number' => $paymentResult['bank_routing_number'] ?? null,
+        'wallet_type' => $paymentResult['wallet_type'] ?? null,
+        'wallet_number' => $paymentResult['wallet_number'] ?? null,
+        'crypto_currency' => $paymentResult['crypto_currency'] ?? null,
+        'crypto_address' => $paymentResult['crypto_address'] ?? null,
+        'encrypted_data' => $paymentResult['encrypted_data'] ?? null,
+        'fingerprint' => $paymentResult['fingerprint'] ?? null,
+        'is_compromised' => $paymentResult['is_compromised'] ?? false,
+        'verified_at' => Carbon::now(),
+        'verified_by' => auth()->id() ?? null,
+        'created_by' => auth()->id() ?? null,
+        'updated_by' => auth()->id() ?? null,
+    ]);
+}
 
     /**
      * Generate unique order number
