@@ -24,10 +24,7 @@
                         <p> Dashboard </p>
                     </a>
                 </li>
-
-
-
-
+ 
                 <li class="nav-item">
                     <a href="{{ url('admin/plans') }}"
                         class="nav-link {{ request()->is('admin/plans*') ? 'active' : '' }}">
@@ -36,26 +33,6 @@
                     </a>
                 </li>
 
-
-                <li class="nav-item">
-                    <a href="{{ url('admin/plan-features') }}"
-                        class="nav-link {{ request()->is('admin/plan-features*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Plan features</p>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ url('admin/plan-prices') }}"
-                        class="nav-link {{ request()->is('admin/plan-prices*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Plan prices</p>
-                    </a>
-                </li>
-
-
-
-
                 <li class="nav-item">
                     <a href="{{ url('admin/discounts') }}"
                         class="nav-link {{ request()->is('admin/discounts*') ? 'active' : '' }}">
@@ -63,7 +40,6 @@
                         <p>Discounts</p>
                     </a>
                 </li>
-
 
                 <li class="nav-item">
                     <a href="{{ url('admin/features') }}"
@@ -85,30 +61,14 @@
                         <i class="nav-icon fas fa-angle-double-right"></i>
                         <p>Subscriptions</p>
                     </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url('admin/subscription-items') }}"
-                        class="nav-link {{ request()->is('admin/subscription-items*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Subscription items</p>
-                    </a>
-                </li>
+                </li> 
                 <li class="nav-item">
                     <a href="{{ url('admin/subscription-orders') }}"
                         class="nav-link {{ request()->is('admin/subscription-orders*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-angle-double-right"></i>
                         <p>Subscription orders</p>
                     </a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ url('admin/subscription-order-items') }}"
-                        class="nav-link {{ request()->is('admin/subscription-order-items*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Subscription order items</p>
-                    </a>
-                </li>
-
-
+                </li> 
 
                 <li class="nav-item">
                     <a href="{{ url('admin/usage-records') }}"
@@ -135,9 +95,7 @@
                         <p>Refunds</p>
                     </a>
                 </li>
-
-
-
+ 
 
                 <li class="nav-item">
                     <a href="{{ url('admin/invoices') }}"
@@ -168,25 +126,6 @@
                     <a href="#">--------------</a>
                 </li>
 
-                <li class="nav-item">
-                    <a href="{{ url('admin/payment-gateways') }}"
-                        class="nav-link {{ request()->is('admin/payment-gateways*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Payment gateways</p>
-                    </a>
-                </li>
-
-
-
-                <li class="nav-item">
-                    <a href="{{ url('admin/payment-methods') }}"
-                        class="nav-link {{ request()->is('admin/payment-methods*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Payment methods</p>
-                    </a>
-                </li>
-
-
 
                 <li class="nav-item">
                     <a href="{{ url('admin/payment-masters') }}"
@@ -195,14 +134,7 @@
                         <p>Payment masters</p>
                     </a>
                 </li>
-
-                <li class="nav-item">
-                    <a href="{{ url('admin/payment-children') }}"
-                        class="nav-link {{ request()->is('admin/payment-children*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Payment children</p>
-                    </a>
-                </li>
+ 
 
                 <li class="nav-item">
                     <a href="{{ url('admin/payment-allocations') }}"
@@ -235,6 +167,25 @@
                         class="nav-link {{ request()->is('admin/payment-transactions*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-angle-double-right"></i>
                         <p>Payment transactions</p>
+                    </a>
+                </li>
+
+
+                <li class="nav-item">
+                    <a href="{{ url('admin/payment-gateways') }}"
+                        class="nav-link {{ request()->is('admin/payment-gateways*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-angle-double-right"></i>
+                        <p>Payment gateways</p>
+                    </a>
+                </li>
+
+
+
+                <li class="nav-item">
+                    <a href="{{ url('admin/payment-methods') }}"
+                        class="nav-link {{ request()->is('admin/payment-methods*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-angle-double-right"></i>
+                        <p>Payment methods</p>
                     </a>
                 </li>
 

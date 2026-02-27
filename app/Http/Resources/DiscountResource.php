@@ -25,15 +25,13 @@ class DiscountResource extends BaseResource
             'max_redemptions' => (int) $this->max_redemptions,
             'times_redeemed' => (int) $this->times_redeemed,
             'is_active' => (bool) $this->is_active,
-            'starts_at' => $this->starts_at?->format('Y-m-d H:i:s'),
-            'expires_at' => $this->expires_at?->format('Y-m-d H:i:s'),
+            'starts_at' => $this->starts_at?->format('M d, Y h:i A'),
+            'expires_at' => $this->expires_at?->format('M d, Y h:i A'),
             'duration' => $this->duration,
             'duration_in_months' => (int) $this->duration_in_months,
             'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
             'restrictions' => $this->restrictions ? json_decode($this->restrictions, true) : [],
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A')
         ];
     }
 }

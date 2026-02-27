@@ -31,20 +31,16 @@ class SubscriptionOrderResource extends BaseResource
             'currency' => $this->currency,
             'customer_info' => $this->customer_info ? json_decode($this->customer_info, true) : [],
             'billing_address' => $this->billing_address ? json_decode($this->billing_address, true) : [],
-            'ordered_at' => $this->ordered_at?->format('Y-m-d H:i:s'),
-            'processed_at' => $this->processed_at?->format('Y-m-d H:i:s'),
-            'cancelled_at' => $this->cancelled_at?->format('Y-m-d H:i:s'),
+            'ordered_at' => $this->ordered_at?->format('M d, Y h:i A'),
+            'processed_at' => $this->processed_at?->format('M d, Y h:i A'),
+            'cancelled_at' => $this->cancelled_at?->format('M d, Y h:i A'),
             'coupon_code' => $this->coupon_code,
             'applied_discounts' => $this->applied_discounts ? json_decode($this->applied_discounts, true) : [],
             'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
             'notes' => $this->notes,
             'failure_reason' => $this->failure_reason,
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at_formatted' => $this->updated_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
-            'updated_at_human' => $this->updated_at?->diffForHumans(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A'),
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
         ];
     }
 }

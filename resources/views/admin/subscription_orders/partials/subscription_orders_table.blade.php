@@ -9,8 +9,8 @@
                 data-edit-url="{{ route('admin.subscription-orders.edit', ':id') }}"
                 data-delete-url="{{ url('api/v1/subscription-orders/destroy') }}/:id"
                 data-show-url="{{ route('admin.subscription-orders.show', ':id') }}"
-                data-fields='["user_id", "payment_master_id", "order_number", "status", "type", "subtotal", "tax_amount", "discount_amount", "total_amount", "currency", "customer_info", "billing_address", "ordered_at", "processed_at", "cancelled_at", "coupon_code", "applied_discounts", "metadata", "notes", "failure_reason"]'
-                data-headers='["User", "Payment Master", "Order Number", "Status", "Type", "Subtotal", "Tax Amount", "Discount Amount", "Total Amount", "Currency", "Customer Info", "Billing Address", "Ordered At", "Processed At", "Cancelled At", "Coupon Code", "Applied Discounts", "Metadata", "Notes", "Failure Reason"]'
+                data-fields='["user_name", "order_number", "type", "subtotal", "tax_amount", "discount_amount", "total_amount", "currency", "ordered_at", "processed_at", "cancelled_at", "status"]'
+                data-headers='["User", "Order Number", "Type", "Subtotal", "Tax Amount", "Discount Amount", "Total Amount", "Currency", "Ordered At", "Processed At", "Cancelled At", "Status"]'
                 data-filters=''
                 {{-- data-filters=']' --}}
                 data-export="true"

@@ -24,9 +24,7 @@ class FeatureResource extends BaseResource
             'reset_period' => $this->reset_period,
             'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
             'validations' => $this->validations ? json_decode($this->validations, true) : [],
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A')
         ];
     }
 }

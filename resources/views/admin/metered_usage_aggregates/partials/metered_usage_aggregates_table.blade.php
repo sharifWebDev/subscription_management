@@ -9,7 +9,7 @@
                 data-edit-url="{{ route('admin.metered-usage-aggregates.edit', ':id') }}"
                 data-delete-url="{{ url('api/v1/metered-usage-aggregates/destroy') }}/:id"
                 data-show-url="{{ route('admin.metered-usage-aggregates.show', ':id') }}"
-                data-fields='["subscription_id", "feature_id", "aggregate_date", "aggregate_period", "total_quantity", "tier1_quantity", "tier2_quantity", "tier3_quantity", "total_amount", "record_count", "last_calculated_at"]'
+                data-fields='["subscription_name", "feature_name", "aggregate_date", "aggregate_period", "total_quantity", "tier1_quantity", "tier2_quantity", "tier3_quantity", "total_amount", "record_count", "last_calculated_at"]'
                 data-headers='["Subscription", "Feature", "Aggregate Date", "Aggregate Period", "Total Quantity", "Tier1 Quantity", "Tier2 Quantity", "Tier3 Quantity", "Total Amount", "Record Count", "Last Calculated At"]'
                 data-filters=''
                 {{-- data-filters=']' --}}

@@ -9,8 +9,8 @@
                 data-edit-url="{{ route('admin.usage-records.edit', ':id') }}"
                 data-delete-url="{{ url('api/v1/usage-records/destroy') }}/:id"
                 data-show-url="{{ route('admin.usage-records.show', ':id') }}"
-                data-fields='["subscription_id", "subscription_item_id", "feature_id", "quantity", "tier_quantity", "amount", "unit", "status", "recorded_at", "billing_date", "metadata", "dimensions"]'
-                data-headers='["Subscription", "Subscription Item", "Feature", "Quantity", "Tier Quantity", "Amount", "Unit", "Status", "Recorded At", "Billing Date", "Metadata", "Dimensions"]'
+                data-fields='["subscription_name", "subscription_item_name", "feature_name", "quantity", "tier_quantity", "amount", "unit", "status", "recorded_at", "billing_date"]'
+                data-headers='["Subscription", "Subscription Item", "Feature", "Quantity", "Tier Quantity", "Amount", "Unit", "Status", "Recorded At", "Billing Date"]'
                 data-filters=''
                 {{-- data-filters=']' --}}
                 data-export="true"

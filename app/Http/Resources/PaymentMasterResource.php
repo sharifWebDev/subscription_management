@@ -39,11 +39,11 @@ class PaymentMasterResource extends BaseResource
             'is_installment' => (bool) $this->is_installment,
             'installment_count' => (int) $this->installment_count,
             'installment_frequency' => $this->installment_frequency,
-            'payment_date' => $this->payment_date?->format('Y-m-d H:i:s'),
-            'due_date' => $this->due_date?->format('Y-m-d H:i:s'),
-            'paid_at' => $this->paid_at?->format('Y-m-d H:i:s'),
-            'cancelled_at' => $this->cancelled_at?->format('Y-m-d H:i:s'),
-            'expires_at' => $this->expires_at?->format('Y-m-d H:i:s'),
+            'payment_date' => $this->payment_date?->format('M d, Y h:i A'),
+            'due_date' => $this->due_date?->format('M d, Y h:i A'),
+            'paid_at' => $this->paid_at?->format('M d, Y h:i A'),
+            'cancelled_at' => $this->cancelled_at?->format('M d, Y h:i A'),
+            'expires_at' => $this->expires_at?->format('M d, Y h:i A'),
             'customer_reference' => $this->customer_reference,
             'bank_reference' => $this->bank_reference,
             'gateway_reference' => $this->gateway_reference,
@@ -51,9 +51,7 @@ class PaymentMasterResource extends BaseResource
             'custom_fields' => $this->custom_fields ? json_decode($this->custom_fields, true) : [],
             'notes' => $this->notes,
             'failure_reason' => $this->failure_reason,
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A')
         ];
     }
 }

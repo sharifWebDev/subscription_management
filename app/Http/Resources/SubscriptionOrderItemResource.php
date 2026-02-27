@@ -43,13 +43,9 @@ class SubscriptionOrderItemResource extends BaseResource
             'end_date' => $this->end_date?->format('Y-m-d'),
             'subscription_status' => $this->subscription_status,
             'processing_error' => $this->processing_error,
-            'processed_at' => $this->processed_at?->format('Y-m-d H:i:s'),
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at_formatted' => $this->updated_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
-            'updated_at_human' => $this->updated_at?->diffForHumans(),
+            'processed_at' => $this->processed_at?->format('M d, Y h:i A'),
+            'created_at' => $this->created_at?->format('M d, Y h:i A'),
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 }

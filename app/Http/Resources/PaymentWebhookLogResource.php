@@ -32,18 +32,14 @@ class PaymentWebhookLogResource extends BaseResource
             'status' => $this->status,
             'processing_error' => $this->processing_error,
             'retry_count' => (int) $this->retry_count,
-            'next_retry_at' => $this->next_retry_at?->format('Y-m-d H:i:s'),
-            'received_at' => $this->received_at?->format('Y-m-d H:i:s'),
-            'processed_at' => $this->processed_at?->format('Y-m-d H:i:s'),
+            'next_retry_at' => $this->next_retry_at?->format('M d, Y h:i A'),
+            'received_at' => $this->received_at?->format('M d, Y h:i A'),
+            'processed_at' => $this->processed_at?->format('M d, Y h:i A'),
             'ip_address' => $this->ip_address,
             'is_verified' => (bool) $this->is_verified,
             'verification_error' => $this->verification_error,
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at_formatted' => $this->updated_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
-            'updated_at_human' => $this->updated_at?->diffForHumans(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A'),
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
         ];
     }
 }

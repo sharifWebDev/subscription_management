@@ -9,7 +9,7 @@
                 data-edit-url="{{ route('admin.rate-limits.edit', ':id') }}"
                 data-delete-url="{{ url('api/v1/rate-limits/destroy') }}/:id"
                 data-show-url="{{ route('admin.rate-limits.show', ':id') }}"
-                data-fields='["subscription_id", "feature_id", "key", "max_attempts", "decay_seconds", "remaining", "resets_at"]'
+                data-fields='["subscription_name", "feature_name", "key", "max_attempts", "decay_seconds", "remaining", "resets_at"]'
                 data-headers='["Subscription", "Feature", "Key", "Max Attempts", "Decay Seconds", "Remaining", "Resets At"]'
                 data-filters=''
                 {{-- data-filters=']' --}}

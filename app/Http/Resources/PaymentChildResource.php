@@ -41,15 +41,13 @@ class PaymentChildResource extends BaseResource
             'period_end' => $this->period_end?->format('Y-m-d'),
             'billing_cycle' => $this->billing_cycle,
             'status' => $this->status,
-            'paid_at' => $this->paid_at?->format('Y-m-d H:i:s'),
+            'paid_at' => $this->paid_at?->format('M d, Y h:i A'),
             'allocated_amount' => $this->allocated_amount ? (float) $this->allocated_amount : 0.0,
             'is_fully_allocated' => (bool) $this->is_fully_allocated,
             'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
             'tax_breakdown' => $this->tax_breakdown ? json_decode($this->tax_breakdown, true) : [],
             'discount_breakdown' => $this->discount_breakdown ? json_decode($this->discount_breakdown, true) : [],
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A')
         ];
     }
 }

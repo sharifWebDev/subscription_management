@@ -33,16 +33,12 @@ class PaymentAllocationResource extends BaseResource
             'allocation_reference' => $this->allocation_reference,
             'allocation_type' => $this->allocation_type,
             'is_reversed' => (bool) $this->is_reversed,
-            'reversed_at' => $this->reversed_at?->format('Y-m-d H:i:s'),
+            'reversed_at' => $this->reversed_at?->format('M d, Y h:i A'),
             'reversal_id' => $this->reversal_id,
             'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
             'notes' => $this->notes,
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at_formatted' => $this->updated_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
-            'updated_at_human' => $this->updated_at?->diffForHumans(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A'),
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
         ];
     }
 }

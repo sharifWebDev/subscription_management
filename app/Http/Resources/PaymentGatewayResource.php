@@ -45,12 +45,8 @@ class PaymentGatewayResource extends BaseResource
             'refund_days' => (int) $this->refund_days,
             'min_amount' => $this->min_amount ? (float) $this->min_amount : 0.0,
             'max_amount' => $this->max_amount ? (float) $this->max_amount : 0.0,
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at_formatted' => $this->updated_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
-            'updated_at_human' => $this->updated_at?->diffForHumans(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A'),
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
         ];
     }
 }

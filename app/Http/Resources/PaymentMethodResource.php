@@ -43,13 +43,11 @@ class PaymentMethodResource extends BaseResource
             'is_compromised' => (bool) $this->is_compromised,
             'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
             'gateway_metadata' => $this->gateway_metadata ? json_decode($this->gateway_metadata, true) : [],
-            'verified_at' => $this->verified_at?->format('Y-m-d H:i:s'),
+            'verified_at' => $this->verified_at?->format('M d, Y h:i A'),
             'verified_by' => $this->verified_by,
-            'last_used_at' => $this->last_used_at?->format('Y-m-d H:i:s'),
+            'last_used_at' => $this->last_used_at?->format('M d, Y h:i A'),
             'usage_count' => (int) $this->usage_count,
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A')
         ];
     }
 }

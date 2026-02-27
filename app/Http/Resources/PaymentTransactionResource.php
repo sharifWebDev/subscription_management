@@ -48,12 +48,12 @@ class PaymentTransactionResource extends BaseResource
             'wallet_transaction_id' => $this->wallet_transaction_id,
             'installment_number' => (int) $this->installment_number,
             'total_installments' => (int) $this->total_installments,
-            'initiated_at' => $this->initiated_at?->format('Y-m-d H:i:s'),
-            'authorized_at' => $this->authorized_at?->format('Y-m-d H:i:s'),
-            'captured_at' => $this->captured_at?->format('Y-m-d H:i:s'),
-            'completed_at' => $this->completed_at?->format('Y-m-d H:i:s'),
-            'failed_at' => $this->failed_at?->format('Y-m-d H:i:s'),
-            'refunded_at' => $this->refunded_at?->format('Y-m-d H:i:s'),
+            'initiated_at' => $this->initiated_at?->format('M d, Y h:i A'),
+            'authorized_at' => $this->authorized_at?->format('M d, Y h:i A'),
+            'captured_at' => $this->captured_at?->format('M d, Y h:i A'),
+            'completed_at' => $this->completed_at?->format('M d, Y h:i A'),
+            'failed_at' => $this->failed_at?->format('M d, Y h:i A'),
+            'refunded_at' => $this->refunded_at?->format('M d, Y h:i A'),
             'fraud_indicators' => $this->fraud_indicators ? json_decode($this->fraud_indicators, true) : [],
             'risk_score' => $this->risk_score ? (float) $this->risk_score : 0.0,
             'requires_review' => (bool) $this->requires_review,
@@ -64,12 +64,8 @@ class PaymentTransactionResource extends BaseResource
             'ip_address' => $this->ip_address,
             'user_agent' => $this->user_agent,
             'location_data' => $this->location_data ? json_decode($this->location_data, true) : [],
-            'created_at' => $this->created_at?->format('Y-m-d H:i:s'),
-            'updated_at' => $this->updated_at?->format('Y-m-d H:i:s'),
-            'created_at_formatted' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at_formatted' => $this->updated_at?->format('M d, Y h:i A'),
-            'created_at_human' => $this->created_at?->diffForHumans(),
-            'updated_at_human' => $this->updated_at?->diffForHumans(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A'),
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
         ];
     }
 }

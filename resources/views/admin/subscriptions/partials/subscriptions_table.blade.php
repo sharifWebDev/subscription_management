@@ -9,8 +9,8 @@
                 data-edit-url="{{ route('admin.subscriptions.edit', ':id') }}"
                 data-delete-url="{{ url('api/v1/subscriptions/destroy') }}/:id"
                 data-show-url="{{ route('admin.subscriptions.show', ':id') }}"
-                data-fields='["user_id", "plan_id", "plan_price_id", "parent_subscription_id", "status", "billing_cycle_anchor", "quantity", "unit_price", "amount", "currency", "trial_starts_at", "trial_ends_at", "trial_converted", "current_period_starts_at", "current_period_ends_at", "billing_cycle_anchor_date", "canceled_at", "cancellation_reason", "prorate", "proration_amount", "proration_date", "gateway", "gateway_subscription_id", "gateway_customer_id", "gateway_metadata", "metadata", "history", "is_active"]'
-                data-headers='["User", "Plan", "Plan Price", "Parent Subscription", "Status", "Billing Cycle Anchor", "Quantity", "Unit Price", "Amount", "Currency", "Trial Starts At", "Trial Ends At", "Trial Converted", "Current Period Starts At", "Current Period Ends At", "Billing Cycle Anchor Date", "Canceled At", "Cancellation Reason", "Prorate", "Proration Amount", "Proration Date", "Gateway", "Gateway Subscription", "Gateway Customer", "Gateway Metadata", "Metadata", "History", "Is Active"]'
+                data-fields='["user_name", "plan_name", "billing_cycle_anchor", "quantity", "trial_starts_at", "trial_ends_at", "trial_converted", "current_period_starts_at", "current_period_ends_at", "canceled_at", "gateway",  "is_active", "status"]'
+                data-headers='["User", "Plan", "Billing Cycle Anchor", "Quantity", "Trial Starts At", "Trial Ends At", "Trial Converted", "Current Period Starts At", "Current Period Ends At", "Canceled At", "Gateway",  "Is Active", "Status"]'
                 data-filters=''
                 {{-- data-filters=']' --}}
                 data-export="true"

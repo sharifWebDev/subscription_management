@@ -9,8 +9,8 @@
                 data-edit-url="{{ route('admin.subscription-events.edit', ':id') }}"
                 data-delete-url="{{ url('api/v1/subscription-events/destroy') }}/:id"
                 data-show-url="{{ route('admin.subscription-events.show', ':id') }}"
-                data-fields='["subscription_id", "type", "data", "changes", "causer_id", "causer_type", "ip_address", "user_agent", "metadata", "occurred_at"]'
-                data-headers='["Subscription", "Type", "Data", "Changes", "Causer", "Causer Type", "Ip Address", "User Agent", "Metadata", "Occurred At"]'
+                data-fields='["subscription_name", "type", "data", "changes", "causer", "causer_type", "ip_address", "user_agent", "occurred_at"]'
+                data-headers='["Subscription", "Type", "Data", "Changes", "Causer", "Causer Type", "Ip Address", "User Agent", "Occurred At"]'
                 data-filters=''
                 {{-- data-filters=']' --}}
                 data-export="true"

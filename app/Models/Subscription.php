@@ -26,6 +26,8 @@ class Subscription extends Model
         'trial_ends_at' => 'datetime',
         'current_period_starts_at' => 'datetime',
         'current_period_ends_at' => 'datetime',
+        'proration_date' => 'datetime',
+        'is_active' => 'boolean',
         'created_by' => 'integer',
         'updated_by' => 'integer',
         'created_at' => 'datetime',
@@ -79,5 +81,10 @@ class Subscription extends Model
     public function payments()
     {
         return $this->hasMany(\App\Models\Payment::class, 'subscription_id');
+    }
+
+    public function meteredUsageAggregates()
+    {
+        return $this->hasMany(\App\Models\MeteredUsageAggregate::class, 'subscription_id');
     }
 }
