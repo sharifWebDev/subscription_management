@@ -32,6 +32,9 @@
       crossorigin="anonymous"
     /> 
     <style>
+        .dt-container {
+    overflow-x: scroll !important;
+}
         body {
             font-family: "Popins", sans-serif;
         }

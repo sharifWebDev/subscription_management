@@ -39,7 +39,7 @@ class PlanResource extends JsonResource
             'discounts' => DiscountResource::collection(
                 $this->whenLoaded('discounts')
             ),
-            'created_at' => $this->created_at?->toISOString(),
+            'created_at' => $this->created_at?->toDateString(),
             'updated_at' => $this->updated_at?->toISOString(),
             'deleted_at' => $this->deleted_at?->toISOString(),
         ];

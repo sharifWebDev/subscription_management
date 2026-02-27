@@ -842,11 +842,11 @@
                                 <p class="fw-semibold mb-0">${bankDetails.routing_number}</p>
                             </div>
                             ${bankDetails.swift_code ? `
-                                    <div class="col-md-6 col-lg-4">
-                                        <label class="text-muted small mb-1">SWIFT Code</label>
-                                        <p class="fw-semibold mb-0">${bankDetails.swift_code}</p>
-                                    </div>
-                                ` : ''}
+                                        <div class="col-md-6 col-lg-4">
+                                            <label class="text-muted small mb-1">SWIFT Code</label>
+                                            <p class="fw-semibold mb-0">${bankDetails.swift_code}</p>
+                                        </div>
+                                    ` : ''}
                         </div>
 
                         <button type="button" class="btn btn-sm btn-outline-primary copy-btn mt-3" onclick="copyBankDetails()">
@@ -1072,12 +1072,32 @@ SWIFT Code: ${bankDetails.swift_code}`;
 
             try {
                 const response = await axios.post('/checkout/process-authenticated', data);
-                console.log('Checkout response:', response.data);
 
-                if (response.data.success) {
+                if (response.data.success || response.data.data?.success || response.data.data?.status ===
+                    'completed') {
                     // Handle redirect-based gateways
                     if (response.data.data?.redirect_url) {
-                        window.location.href = response.data.data.redirect_url;
+                        if (response.data.data?.redirect_url === '/payment/sslcommerz/success') {
+                            setTimeout(() => {
+                                toastr.success('Redirecting to payment gateway...');
+                                axios.get('/payment/sslcommerz/success')
+                                    .then((response) => {
+                                        toastr.success('Payment completed successfully!');
+                                        console.log('Payment success response:', response.data);
+                                        // window.location.href = response.data.redirect_url || '/dashboard/subscriptions';
+                                    })
+                                    .catch((error) => {
+                                        toastr.error('Error processing SSLCommerz payment' + (error.response?.data?.message ? ': ' + error.response.data.message : ''));
+                                        window.location.href = '/dashboard/subscriptions';
+                                    });
+                            }, 2000);
+                            return;
+                        } else {
+                            toastr.success('Redirecting to payment gateway...');
+                           window.location.href = response.data.data.redirect_url || response.data.redirect_url ||
+                               '/dashboard/subscriptions';
+                            return; // Stop execution
+                        }
                     }
                     // Handle completed payment
                     else if (response.data.data?.status === 'completed') {
@@ -1111,7 +1131,7 @@ SWIFT Code: ${bankDetails.swift_code}`;
                     toastr.error(error.response?.data?.message || 'Checkout failed');
                 }
                 $('#submitBtn').prop('disabled', false).html(
-                '<i class="fas fa-paper-plane me-2"></i>Complete Purchase');
+                    '<i class="fas fa-paper-plane me-2"></i>Complete Purchase');
             }
         }
 
@@ -1195,7 +1215,7 @@ SWIFT Code: ${bankDetails.swift_code}`;
             } catch (error) {
                 toastr.error(error.response?.data?.message || 'Failed to send OTP');
                 $('#submitBtn').prop('disabled', false).html(
-                '<i class="fas fa-paper-plane me-2"></i>Complete Purchase');
+                    '<i class="fas fa-paper-plane me-2"></i>Complete Purchase');
             }
         }
 

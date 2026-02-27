@@ -36,7 +36,7 @@ class NagadGateway
         $this->merchantId = config('payment.gateways.nagad.merchant_id');
         $this->merchantKey = config('payment.gateways.nagad.merchant_key');
         $this->baseUrl = $this->isSandbox ? self::SANDBOX_URL : self::PRODUCTION_URL;
-        $this->callbackUrl = config('payment.gateways.nagad.callback_url', route('payment.nagad.callback'));
+        $this->callbackUrl = config('payment.gateways.nagad.callback_url');
     }
 
     /**

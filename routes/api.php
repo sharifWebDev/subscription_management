@@ -294,24 +294,6 @@ Route::prefix('/v1')
         Route::middleware('auth:sanctum')->post('/checkout/process-authenticated', [CheckoutController::class, 'processAuthenticated']);
     });
 
-// Payment callback routes (public)
-Route::get('/payment/{gateway}/callback', [CheckoutController::class, 'handleCallback'])->name('payment.callback');
-Route::get('/payment/{gateway}/success', [CheckoutController::class, 'handleCallback'])->name('payment.success');
-Route::get('/payment/{gateway}/cancel', [CheckoutController::class, 'handleCallback'])->name('payment.cancel');
-Route::post('/payment/{gateway}/ipn', [CheckoutController::class, 'handleCallback'])->name('payment.ipn');
-
-// Specific gateway callback routes
-Route::get('/payment/paypal/success', [CheckoutController::class, 'handleCallback'])->name('payment.paypal.success');
-Route::get('/payment/paypal/cancel', [CheckoutController::class, 'handleCallback'])->name('payment.paypal.cancel');
-Route::get('/payment/paypal/subscription/success', [CheckoutController::class, 'handleCallback'])->name('payment.paypal.subscription.success');
-
-Route::get('/payment/surjopay/success', [CheckoutController::class, 'handleCallback'])->name('payment.surjopay.success');
-Route::get('/payment/surjopay/fail', [CheckoutController::class, 'handleCallback'])->name('payment.surjopay.fail');
-Route::get('/payment/surjopay/cancel', [CheckoutController::class, 'handleCallback'])->name('payment.surjopay.cancel');
-Route::post('/payment/surjopay/ipn', [CheckoutController::class, 'handleCallback'])->name('payment.surjopay.ipn');
-
-Route::get('/payment/bkash/callback', [CheckoutController::class, 'handleCallback'])->name('payment.bkash.callback');
-
 // Protected API routes
 Route::middleware('auth:sanctum')
     ->prefix('/v1')
@@ -349,13 +331,6 @@ Route::middleware('auth:sanctum')
 Route::prefix('/v1')
     ->group(function () {
         Route::get('/payment-gateways', [PaymentGatewayController::class, 'index']);
-        // Public webhook routes
-        Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripe']);
-        Route::post('/webhooks/paypal', [WebhookController::class, 'handlePayPal']);
-        Route::post('/webhooks/bkash', [WebhookController::class, 'handleBkash']);
-        Route::post('/webhooks/surjopay', [WebhookController::class, 'handleSurjoPay']);
-        // sslcommerz
-        Route::post('/webhooks/sslcommerz', [WebhookController::class, 'handleSslCommerz']);
     });
 
 // stripe
@@ -364,3 +339,43 @@ Route::middleware('auth:sanctum')
     ->group(function () {
         Route::post('/checkout/confirm-stripe', [CheckoutController::class, 'confirmStripePayment']);
     });
+
+// ==================== PAYMENT CALLBACK ROUTES (Public, No Auth) ====================
+Route::prefix('payment')->name('payment.')->group(function () {
+    // ডায়নামিক কলব্যাক হ্যান্ডলার - সব গেটওয়ের জন্য একটি রাউট
+    Route::match(['get', 'post'], '/callback/{gateway}/{status?}', [CheckoutController::class, 'handleCallback'])
+        ->name('callback')
+        ->where('gateway', 'stripe|paypal|bkash|nagad|rocket|surjopay|sslcommerz|cash|bank-transfer')
+        ->where('status', 'success|fail|cancel|ipn|pending');
+
+    // ডায়নামিক স্পেসিফিক রাউট (যেমন: /payment/stripe/success)
+    Route::match(['get', 'post'], '/{gateway}/{status?}', [CheckoutController::class, 'handleCallback'])
+        ->name('gateway.callback')
+        ->where('gateway', 'stripe|paypal|bkash|nagad|rocket|surjopay|sslcommerz|cash|bank-transfer')
+        ->where('status', 'success|fail|cancel|ipn|pending');
+
+    // ডায়নামিক আইপিএন রাউট (পোস্ট মেথড)
+    Route::post('/{gateway}/ipn', [CheckoutController::class, 'handleCallback'])
+        ->name('gateway.ipn')
+        ->where('gateway', 'stripe|paypal|bkash|nagad|rocket|surjopay|sslcommerz')
+        ->defaults('status', 'ipn');
+
+    // বিশেষ কেস: PayPal subscription success
+    Route::get('/{gateway}/subscription/success', [CheckoutController::class, 'handleCallback'])
+        ->name('gateway.subscription.success')
+        ->where('gateway', 'paypal')
+        ->defaults('status', 'success');
+});
+
+// ==================== WEBHOOK ROUTES (Public) ====================
+Route::prefix('webhooks')->name('webhooks.')->group(function () {
+    // ডায়নামিক ওয়েবহুক হ্যান্ডলার
+    Route::post('/{gateway}', [WebhookController::class, 'handleWebhook'])
+        ->name('handle')
+        ->where('gateway', 'stripe|paypal|bkash|nagad|rocket|surjopay|sslcommerz');
+});
+
+// ==================== HEALTH CHECK ====================
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok', 'timestamp' => now()]);
+});

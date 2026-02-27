@@ -38,7 +38,7 @@ class RocketGateway
         $this->merchantId = config('payment.gateways.rocket.merchant_id');
         $this->merchantKey = config('payment.gateways.rocket.merchant_key');
         $this->baseUrl = $this->isSandbox ? self::SANDBOX_URL : self::PRODUCTION_URL;
-        $this->callbackUrl = config('payment.gateways.rocket.callback_url', route('payment.rocket.callback'));
+        $this->callbackUrl = config('payment.gateways.rocket.callback_url');
     }
 
     /**

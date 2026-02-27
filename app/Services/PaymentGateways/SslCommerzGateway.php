@@ -20,8 +20,16 @@ class SslCommerzGateway
     public function __construct()
     {
         $this->isSandbox = config('payment.gateways.sslcommerz.sandbox', true);
-        $this->storeId = config('payment.gateways.sslcommerz.store_id');
-        $this->storePassword = config('payment.gateways.sslcommerz.store_password');
+
+        // Sandbox and live credentials আলাদা করুন
+        if ($this->isSandbox) {
+            $this->storeId = config('payment.gateways.sslcommerz.test_store_id', 'testbox');
+            $this->storePassword = config('payment.gateways.sslcommerz.test_store_password', 'qwerty');
+        } else {
+            $this->storeId = config('payment.gateways.sslcommerz.store_id');
+            $this->storePassword = config('payment.gateways.sslcommerz.store_password');
+        }
+
         $this->baseUrl = $this->isSandbox
             ? 'https://sandbox.sslcommerz.com'
             : 'https://secure.sslcommerz.com';
@@ -33,69 +41,83 @@ class SslCommerzGateway
     public function initPayment(array $data): array
     {
         try {
+            // Generate unique transaction ID if not provided
+            $tranId = $data['transaction_id'] ?? 'SSL-'.uniqid().'-'.time();
             $postData = [
                 'store_id' => $this->storeId,
                 'store_passwd' => $this->storePassword,
-                'total_amount' => $data['amount'],
+                'total_amount' => round($data['amount'], 2),
                 'currency' => $data['currency'] ?? 'BDT',
-                'tran_id' => $data['transaction_id'],
-                'success_url' => route('payment.sslcommerz.success'),
-                'fail_url' => route('payment.sslcommerz.fail'),
-                'cancel_url' => route('payment.sslcommerz.cancel'),
-                'ipn_url' => route('payment.sslcommerz.ipn'),
+                'tran_id' => $tranId,
+                'success_url' => $data['success_url'] ?? '',
+                'fail_url' => $data['fail_url'] ?? '',
+                'cancel_url' => $data['cancel_url'] ?? '',
+                'ipn_url' => $data['ipn_url'] ?? '',
                 'cus_name' => $data['customer_name'] ?? 'Customer',
-                'cus_email' => $data['email'] ?? '',
-                'cus_phone' => $data['phone'] ?? '',
+                'cus_email' => $data['email'] ?? 'customer@example.com',
+                'cus_phone' => $data['phone'] ?? '01700000000',
                 'cus_add1' => $data['address'] ?? 'N/A',
                 'cus_city' => $data['city'] ?? 'Dhaka',
                 'cus_country' => $data['country'] ?? 'Bangladesh',
+                'cus_postcode' => $data['post_code'] ?? '1000',
+                'cus_state' => $data['state'] ?? 'Dhaka',
                 'shipping_method' => 'NO',
                 'product_name' => $data['product_name'] ?? 'Subscription',
                 'product_category' => $data['product_category'] ?? 'Subscription',
                 'product_profile' => $data['product_profile'] ?? 'general',
+                'num_of_item' => 1,
             ];
 
-            // Add optional parameters
+            // Add EMI options if applicable
             if (isset($data['emi_option'])) {
                 $postData['emi_option'] = $data['emi_option'];
             }
 
-            if (isset($data['emi_max_inst_option'])) {
-                $postData['emi_max_inst_option'] = $data['emi_max_inst_option'];
+            // Make API request with proper error handling
+            $response = Http::asForm()
+                ->timeout(30)
+                ->retry(3, 100)
+                ->post($this->baseUrl.'/gwprocess/v4/api.php', $postData);
+
+            if ($response->failed()) {
+                Log::error('SSLCommerz HTTP failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => 'Failed to connect to SSLCommerz',
+                ];
             }
 
-            if (isset($data['emi_selected_inst'])) {
-                $postData['emi_selected_inst'] = $data['emi_selected_inst'];
-            }
+            $result = $response->json();
 
-            // Make API request
-            $response = Http::asForm()->post($this->baseUrl.'/gwprocess/v4/api.php', $postData);
+            Log::info('SSLCommerz init response', ['result' => $result]);
 
-            if ($response->successful()) {
-                $result = $response->json();
-
-                if (isset($result['status']) && $result['status'] === 'SUCCESS') {
-                    return [
-                        'success' => true,
-                        'gateway_url' => $result['GatewayPageURL'],
-                        'sessionkey' => $result['sessionkey'] ?? null,
-                        'tran_id' => $result['tran_id'] ?? $data['transaction_id'],
-                    ];
-                } else {
-                    return [
-                        'success' => false,
-                        'message' => $result['failedreason'] ?? 'Payment initialization failed',
-                    ];
+            if (isset($result['status']) && $result['status'] === 'SUCCESS') {
+                return [
+                    'success' => true,
+                    'gateway_url' => $result['GatewayPageURL'],
+                    'sessionkey' => $result['sessionkey'] ?? null,
+                    'tran_id' => $result['tran_id'] ?? $tranId,
+                ];
+            } else {
+                $errorMsg = $result['failedreason'] ?? 'Payment initialization failed';
+                if (isset($result['error'])) {
+                    $errorMsg = $result['error'];
                 }
-            }
 
-            return [
-                'success' => false,
-                'message' => 'Failed to connect to SSLCommerz',
-            ];
+                return [
+                    'success' => false,
+                    'message' => $errorMsg,
+                ];
+            }
 
         } catch (Exception $e) {
-            Log::error('SSLCommerz init error: '.$e->getMessage());
+            Log::error('SSLCommerz init error: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
 
             return [
                 'success' => false,
@@ -116,6 +138,12 @@ class SslCommerzGateway
             $currency = $request->input('currency');
             $status = $request->input('status');
 
+            Log::info('SSLCommerz validation started', [
+                'val_id' => $validatedId,
+                'tran_id' => $tranId,
+                'status' => $status,
+            ]);
+
             if ($status !== 'VALID' && $status !== 'VALIDATED') {
                 return [
                     'success' => false,
@@ -125,6 +153,7 @@ class SslCommerzGateway
 
             // Verify with SSLCommerz API
             $validationUrl = $this->baseUrl.'/validator/api/validationserverAPI.php';
+
             $response = Http::get($validationUrl, [
                 'val_id' => $validatedId,
                 'store_id' => $this->storeId,
@@ -134,6 +163,8 @@ class SslCommerzGateway
 
             if ($response->successful()) {
                 $validation = $response->json();
+
+                Log::info('SSLCommerz validation response', ['validation' => $validation]);
 
                 if (isset($validation['status']) && $validation['status'] === 'VALID') {
                     return [
@@ -165,6 +196,7 @@ class SslCommerzGateway
     {
         try {
             $queryUrl = $this->baseUrl.'/validator/api/merchantTransIDvalidationAPI.php';
+
             $response = Http::get($queryUrl, [
                 'merchant_trans_id' => $tranId,
                 'store_id' => $this->storeId,
@@ -201,6 +233,7 @@ class SslCommerzGateway
     {
         try {
             $refundUrl = $this->baseUrl.'/validator/api/merchantTransIDvalidationAPI.php';
+
             $response = Http::post($refundUrl, [
                 'store_id' => $this->storeId,
                 'store_passwd' => $this->storePassword,

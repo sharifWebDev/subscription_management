@@ -33,6 +33,40 @@ class WebhookController extends Controller
     }
 
     /**
+     * ডায়নামিক ওয়েবহুক হ্যান্ডলার - সব গেটওয়ের জন্য একটি মেথড
+     */
+    public function handleWebhook(Request $request, $gateway)
+    {
+        Log::info('Webhook received', [
+            'gateway' => $gateway,
+            'method' => $request->method(),
+            'headers' => $request->headers->all(),
+            'data' => $request->all(),
+        ]);
+
+        switch ($gateway) {
+            case 'stripe':
+                return $this->handleStripe($request);
+            case 'paypal':
+                return $this->handlePayPal($request);
+            case 'bkash':
+                return $this->handleBkash($request);
+            case 'nagad':
+                return $this->handleNagad($request);
+            case 'rocket':
+                return $this->handleRocket($request);
+            case 'surjopay':
+                return $this->handleSurjoPay($request);
+            case 'sslcommerz':
+                return $this->handleSslCommerz($request);
+            default:
+                Log::error('Unsupported webhook gateway', ['gateway' => $gateway]);
+
+                return response()->json(['error' => 'Unsupported gateway'], 400);
+        }
+    }
+
+    /**
      * Handle Stripe webhooks
      */
     public function handleStripe(Request $request)
