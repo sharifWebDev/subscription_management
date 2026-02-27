@@ -37,7 +37,7 @@ class Invoice extends Model
         'finalized_at' => 'datetime',
         // 'line_items' => 'array',
         // 'tax_rates' => 'json',
-        'discounts' => 'array',
+        // 'discounts' => 'array',
         // 'metadata' => 'array',
         // 'history' => 'array',
         'pdf_url' => 'string',

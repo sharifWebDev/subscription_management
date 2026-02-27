@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Invoice;
+use App\Models\Payment;
+use App\Models\PaymentChild;
 use App\Models\PaymentMaster;
 use App\Models\PaymentMethod;
 use App\Models\PaymentTransaction;
@@ -30,6 +33,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Stripe\PaymentIntent;
 
 class CheckoutController extends Controller
 {
@@ -254,6 +259,7 @@ class CheckoutController extends Controller
                 ]);
 
                 $order->update([
+                    'payment_master_id' => $paymentMaster->id,
                     'status' => 'completed',
                     'processed_at' => Carbon::now(),
                 ]);
@@ -386,10 +392,14 @@ class CheckoutController extends Controller
                     'processed_at' => Carbon::now(),
                 ]);
 
-                $order->update([
+               $order->update([
                     'status' => 'completed',
                     'processed_at' => Carbon::now(),
                 ]);
+
+                $invoice = $this->invoice($order->fresh(), $subscription->id);
+
+                $this->payment($invoice, $order->metadata['gateway'] ?? $request->gateway);
 
                 // Save payment method if requested
                 if ($request->boolean('save_payment_method') && isset($paymentResult['payment_method_id'])) {
@@ -1458,11 +1468,6 @@ class CheckoutController extends Controller
     {
         $tranId = $request->input('tran_id') ?? $request->get('tran_id');
 
-        \Log::info('SSLCommerz callback received', [
-            'tran_id' => $tranId,
-            'data' => $request->all(),
-        ]);
-
         // Find transaction by various methods
         $transaction = $this->findTransaction($tranId);
 
@@ -1499,9 +1504,6 @@ class CheckoutController extends Controller
      */
     protected function processSslCommerzSuccess(PaymentTransaction $transaction, Request $request)
     {
-        \Log::info('SSLCommerz success callback received', [
-            'data' => $request->all(),
-        ]);
         try {
             // Validate payment
             $validation = $this->sslCommerzGateway->validatePayment($request);
@@ -1557,7 +1559,7 @@ class CheckoutController extends Controller
 
             // **পেমেন্ট মেথড সংরক্ষণ করুন (SSLCommerz-এর জন্য)**
             $user = $transaction->user ?? $paymentMaster->user;
-            
+
             if ($user && $request->input('card_type')) {
                 $this->saveSslCommerzPaymentMethod($user, $transaction, $request, $paymentMaster);
             }
@@ -2048,7 +2050,23 @@ class CheckoutController extends Controller
                 'plan_id' => $plan->id,
                 'price_id' => $price->id,
                 'gateway' => $request->gateway,
+                'payment_master_id' => $request->payment_master_id,
+                'recipient_user_id' => $request->id,
+                'recipient_info' => json_encode([
+                    'id' => $request->id,
+                    'name' => $request->name,
+                    'email' => $request->email ?? $user->email,
+                    'user_ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'user_id' => $user->id,
+                    'location' => $request->get('location', []),
+                    'longitude' => $request->get('longitude', []),
+                    'latitude' => $request->get('latitude', []),
+                    'country' => $request->get('country', []),
+                    'device' => $request->get('device', []),
+                ]),
             ]),
+            'ordered_at' => Carbon::now(),
             'created_by' => $user->id,
         ]);
 
@@ -2060,12 +2078,27 @@ class CheckoutController extends Controller
             'plan_name' => $plan->name,
             'billing_cycle' => $price->interval,
             'quantity' => 1,
+            'recipient_user_id' => $request->id,
+            'recipient_info' => json_encode([
+                'id' => $request->id,
+                'name' => $request->name,
+                'email' => $request->email ?? $user->email,
+                'phone' => $request->phone ?? $user->phone,
+                'billing_address' => $request->billing_address ?? [],
+                'metadata' => [
+                    'plan_id' => $plan->id,
+                    'price_id' => $price->id,
+                    'gateway' => $request->gateway,
+                ],
+            ]),
             'unit_price' => $price->amount,
             'amount' => $subtotal,
             'tax_amount' => $tax,
             'total_amount' => $total,
             'start_date' => Carbon::now(),
+            'end_date' => Carbon::now()->addMonths($price->interval),
             'subscription_status' => 'pending',
+            'created_by' => $user->id,
         ]);
 
         return $order;
@@ -2076,7 +2109,7 @@ class CheckoutController extends Controller
      */
     protected function createPaymentMaster(User $user, SubscriptionOrder $order, Request $request): PaymentMaster
     {
-        return PaymentMaster::create([
+        $paymentMaster = PaymentMaster::create([
             'user_id' => $user->id,
             'payment_number' => $this->generatePaymentNumber(),
             'type' => 'subscription',
@@ -2087,6 +2120,7 @@ class CheckoutController extends Controller
             'currency' => $order->currency,
             'payment_method' => $request->payment_method,
             'payment_gateway' => $request->gateway,
+            'payment_date' => Carbon::now(),
             'payment_method_details' => json_encode($request->payment_details ?? []),
             'metadata' => json_encode([
                 'order_id' => $order->id,
@@ -2094,6 +2128,144 @@ class CheckoutController extends Controller
                 'price_id' => $request->price_id,
             ]),
             'created_by' => $user->id,
+        ]);
+
+        $this->createPaymentChildren($paymentMaster, $order->items);
+
+        return $paymentMaster;
+    }
+
+    protected function createPaymentChildren(PaymentMaster $paymentMaster, $orderItems)
+    {
+        foreach ($orderItems as $item) {
+            PaymentChild::create([
+                'payment_master_id' => $paymentMaster->id,
+                'item_type' => 'subscription',
+                'item_id' => $item->id,
+                'subscription_id' => $item->subscription_id,
+                'plan_id' => $item->plan_id,
+                'invoice_id' => $item->invoice_id,
+                'description' => $item->plan_name,
+                'item_code' => 'SUBSCRIPTION_'.$item->plan_id,
+                'unit_price' => $item->unit_price,
+                'quantity' => $item->quantity,
+                'amount' => $item->amount,
+                'tax_amount' => $item->tax_amount,
+                'total_amount' => $item->total_amount,
+                'discount_amount' => $item->discount_amount,
+                'period_start' => $item->period_start,
+                'period_end' => $item->period_end,
+                'billing_cycle' => $item->billing_cycle,
+                'status' => 'paid',
+                'paid_at' => $item->paid_at ?? Carbon::now(),
+                'allocated_amount' => $item->total_amount,
+                // 'is_fully_allocated' => 1,
+                'metadata' => $paymentMaster->metadata,
+                'tax_breakdown' => json_encode([
+                    'name' => 'Tax',
+                    'amount' => $paymentMaster->tax_amount,
+                    'rate' => $paymentMaster->tax_amount > 0 ? round(($paymentMaster->tax_amount / $paymentMaster->total_amount) * 100, 2) : 0,
+                ]),
+                'discount_breakdown' => json_encode([
+                    'name' => 'Discount',
+                        'amount' => $paymentMaster->discount_amount,
+                        'rate' => $paymentMaster->discount_amount > 0 ? round(($paymentMaster->discount_amount / $paymentMaster->total_amount) * 100, 2) : 0,
+                ]),
+                'created_by' => $item->created_by,
+            ]);
+        }
+    }
+
+    protected function invoice(SubscriptionOrder $order, $subscriptionId)
+    {
+        return Invoice::create([
+            'user_id' => $order->user_id,
+            'subscription_id' => $subscriptionId,
+            'number' => $this->generateInvoiceNumber($order->id),
+            'external_id' => 'INV-'.$order->id.'-'.Str::upper(Str::random(6)),
+            'type' => 'subscription',
+            'status' => $order->status,
+            'subtotal' => $order->subtotal,
+            'tax' => $order->tax_amount,
+            'total' => $order->total_amount,
+            'amount_due' => $order->total_amount,
+            'amount_paid' => 0,
+            'currency' => $order->currency,
+            'issue_date' => Carbon::now(),
+            'due_date' => Carbon::now()->addDays(30),
+            'paid_at' => null,
+            'finalized_at' => null,
+            'line_items' => json_encode([
+                [
+                    'description' => $order->items->first()->plan_name,
+                    'quantity' => $order->items->first()->quantity,
+                    'unit_price' => $order->items->first()->unit_price,
+                    'amount' => $order->items->first()->amount,
+                    'tax_amount' => $order->items->first()->tax_amount,
+                    'total_amount' => $order->items->first()->total_amount,
+                ],
+            ]),
+            'tax_rates' => json_encode([
+                'name' => 'Tax',
+                'amount' => $order->tax_amount,
+                'rate' => $order->tax_amount > 0 ? round(($order->tax_amount / $order->total_amount) * 100, 2) : 0,
+            ]),
+            'discounts' => json_encode([
+                'name' => 'Discount',
+                'amount' => 0,
+                'rate' => 0,
+            ]),
+            'metadata' => json_encode([
+                'order_id' => $order->id,
+                'plan_id' => $order->items->first()->plan_id ?? null,
+                'price_id' => $order->items->first()->price_id ?? null,
+            ]),
+            'history' => json_encode([
+                [
+                    'status' => $order->status,
+                    'changed_at' => Carbon::now(),
+                    'note' => 'Invoice created from order',
+                ],
+            ]),
+            'pdf_url' => null,
+            'created_by' => $order->user_id,
+            'updated_by' => $order->user_id,
+        ]);
+    }
+
+    protected function generateInvoiceNumber($orderId)
+    {
+        return 'INV-'.Carbon::now()->format('Ym'). '-' . $orderId.'-'.Str::upper(Str::random(10));
+    }
+    protected function payment($invoice, $gateway)
+    {
+        return Payment::create([
+           'invoice_id' => $invoice->id,
+           'user_id' => $invoice->user_id,
+           'external_id' => 'PAY-'.Str::upper(Str::random(10)),
+           'type' => 'subscription',
+           'status' => 'succeeded',
+           'amount' => $invoice->total,
+           'fee' => 0,
+           'net_amount' => $invoice->total,
+           'currency' => $invoice->currency,
+           'gateway' => $gateway,
+           'gateway_response' => $invoice->metadata['gateway_response'] ?? null,
+           'payment_method' => $invoice->metadata['payment_method'] ?? null,
+           'processed_at' => Carbon::now(),
+           'refunded_at' => null,
+           'metadata' => json_encode([
+                'order_id' => $invoice->metadata['order_id'] ?? null,
+                'plan_id' => $invoice->metadata['plan_id'] ?? null,
+                'price_id' => $invoice->metadata['price_id'] ?? null,
+           ]),
+           'fraud_indicators' => json_encode([
+                'is_high_risk' => false,
+                'is_fraud' => false,
+                'risk_score' => 0,
+           ]),
+           'created_by' => auth()->id(),
+           'updated_by' => auth()->id(),
         ]);
     }
 
@@ -2297,14 +2469,14 @@ protected function saveSslCommerzPaymentMethod(User $user, PaymentTransaction $t
         $cardType = $request->input('card_type', '');
         $cardBrand = $request->input('card_brand', '');
         $cardIssuer = $request->input('card_issuer', '');
-        
+
         // Generate a unique payment method ID from transaction
         $gatewayPaymentMethodId = 'sslcommerz_' . $request->input('tran_id') . '_' . time();
-        
+
         // Determine wallet type based on card type
         $walletType = null;
         $walletNumber = null;
-        
+
         if (strpos($cardType, 'BKASH') !== false) {
             $walletType = 'bkash';
         } elseif (strpos($cardType, 'NAGAD') !== false) {
@@ -2320,7 +2492,7 @@ protected function saveSslCommerzPaymentMethod(User $user, PaymentTransaction $t
         } else {
             $walletType = strtolower(str_replace(' ', '_', $cardType));
         }
-        
+
         // Prepare payment result data
         $paymentResult = [
             'payment_method_id' => $gatewayPaymentMethodId,
@@ -2333,7 +2505,7 @@ protected function saveSslCommerzPaymentMethod(User $user, PaymentTransaction $t
             'bank_name' => $cardIssuer,
             'fingerprint' => $request->input('val_id'),
         ];
-        
+
         // Create a new request with gateway info
         $methodRequest = new Request();
         $methodRequest->merge([
@@ -2350,7 +2522,7 @@ protected function saveSslCommerzPaymentMethod(User $user, PaymentTransaction $t
                 'payment_master_id' => $paymentMaster->id,
             ]
         ]);
-        
+
         // Check if this payment method already exists
         $existingMethod = PaymentMethod::where('user_id', $user->id)
             ->where('gateway', 'sslcommerz')
@@ -2359,7 +2531,7 @@ protected function saveSslCommerzPaymentMethod(User $user, PaymentTransaction $t
                       ->orWhere('bank_name', $cardIssuer);
             })
             ->first();
-        
+
         if ($existingMethod) {
             // Update existing method
             $existingMethod->update([
@@ -2370,15 +2542,15 @@ protected function saveSslCommerzPaymentMethod(User $user, PaymentTransaction $t
                     ['last_transaction_id' => $request->input('tran_id')]
                 )),
             ]);
-            
+
             Log::info('Existing SSLCommerz payment method updated', [
                 'method_id' => $existingMethod->id,
                 'user_id' => $user->id
             ]);
-            
+
             return;
         }
-        
+
         // Create new payment method
         $paymentMethod = PaymentMethod::create([
             'user_id' => $user->id,
@@ -2410,13 +2582,13 @@ protected function saveSslCommerzPaymentMethod(User $user, PaymentTransaction $t
             'verified_by' => $user->id,
             'created_by' => $user->id,
         ]);
-        
+
         Log::info('New SSLCommerz payment method saved', [
             'method_id' => $paymentMethod->id,
             'user_id' => $user->id,
             'wallet_type' => $walletType
         ]);
-        
+
     } catch (Exception $e) {
         Log::error('Failed to save SSLCommerz payment method: ' . $e->getMessage(), [
             'trace' => $e->getTraceAsString(),
