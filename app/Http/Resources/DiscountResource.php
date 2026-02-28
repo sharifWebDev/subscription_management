@@ -29,8 +29,16 @@ class DiscountResource extends BaseResource
             'expires_at' => $this->expires_at?->format('M d, Y h:i A'),
             'duration' => $this->duration,
             'duration_in_months' => (int) $this->duration_in_months,
-            'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
-            'restrictions' => $this->restrictions ? json_decode($this->restrictions, true) : [],
+            'metadata' => $this->metadata 
+                ? collect(json_decode($this->metadata, true))
+                    ->map(fn($value, $key) => "$key: $value")
+                    ->implode(', ')
+                : '',
+            'restrictions' => $this->restrictions 
+                ? collect(json_decode($this->restrictions, true))
+                    ->map(fn($value, $key) => "$key: $value")
+                    ->implode(', ')
+                : '',
             'created_at' => $this->created_at?->format('M d, Y h:i A')
         ];
     }

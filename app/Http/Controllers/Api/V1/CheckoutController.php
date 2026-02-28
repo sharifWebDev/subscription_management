@@ -188,107 +188,129 @@ class CheckoutController extends Controller
     /**
      * Verify OTP and process checkout
      */
-    public function verifyOtpAndCheckout(Request $request): JsonResponse
-    {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'otp' => 'required|string|size:6',
-            'plan_id' => 'required|exists:plans,id',
-            'price_id' => 'required|exists:plan_prices,id',
-            'payment_method' => 'required|string',
-            'gateway' => 'required|string',
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'billing_address' => 'nullable|array',
-            'payment_details' => 'nullable|array',
-            'terms' => 'required|accepted',
-        ]);
+/**
+ * Verify OTP and process checkout
+ */
+public function verifyOtpAndCheckout(Request $request): JsonResponse
+{
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email',
+        'otp' => 'required|string|size:6',
+        'plan_id' => 'required|exists:plans,id',
+        'price_id' => 'required|exists:plan_prices,id',
+        'payment_method' => 'required|string',
+        'gateway' => 'required|string',
+        'name' => 'required|string|max:255',
+        'phone' => 'nullable|string|max:20',
+        'billing_address' => 'nullable|array',
+        'payment_details' => 'nullable|array',
+        'save_payment_method' => 'boolean',
+        'terms' => 'required|accepted',
+    ]);
 
-        if ($validator->fails()) {
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors(),
+        ], 422);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        // 🔐 Verify OTP & Create/Get User
+        $otpResult = $this->otpService->verifyOtpAndCreateUser(
+            $request->email,
+            $request->otp,
+            [
+                'name' => $request->name,
+                'phone' => $request->phone,
+            ]
+        );
+
+        if (! $otpResult['success']) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors(),
-            ], 422);
+                'message' => $otpResult['message'],
+            ], 400);
         }
 
-        DB::beginTransaction();
+        $user = $otpResult['user'];
 
-        try {
-            // Verify OTP and get/create user
-            $otpResult = $this->otpService->verifyOtpAndCreateUser(
-                $request->email,
-                $request->otp,
-                [
-                    'name' => $request->name,
-                    'phone' => $request->phone,
-                ]
-            );
+        // 🛒 Create Order
+        $order = $this->createOrder($user, $request);
+        $order = $order->load('items');
 
-            if (! $otpResult['success']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $otpResult['message'],
-                ], 400);
-            }
+        // 💳 Create Payment Master
+        $paymentMaster = $this->createPaymentMaster($user, $order, $request);
 
-            $user = $otpResult['user'];
+        // 🚀 Process Payment
+        $paymentResult = $this->processGatewayPayment($paymentMaster, $order, $user, $request);
 
-            // Create order
-            $order = $this->createOrder($user, $request);
-            $order = $order->load('items');
+        if (! $paymentResult['success']) {
+            throw new Exception($paymentResult['message'] ?? 'Payment processing failed');
+        }
 
-            // Create payment master
-            $paymentMaster = $this->createPaymentMaster($user, $order, $request);
+        // 🌍 Redirect-based gateway (SSLCommerz, bKash etc.)
+        if (!empty($paymentResult['requires_redirect'])) {
 
-            // Process payment based on gateway
-            $paymentResult = $this->processGatewayPayment($paymentMaster, $order, $user, $request);
+            DB::commit();
 
-            if (! $paymentResult['success']) {
-                throw new Exception($paymentResult['message'] ?? 'Payment processing failed');
-            }
-
-            // If payment is immediately successful (like card), create subscription
-            if ($paymentResult['status'] === 'completed') {
-                $subscription = $this->createSubscription($user, $order, $request, $paymentMaster);
-
-                // Update order with subscription
-                $order->items()->update([
-                    'subscription_id' => $subscription->id,
-                    'subscription_status' => 'active',
-                    'processed_at' => Carbon::now(),
-                ]);
-
-                $order->update([
+            return response()->json([
+                'success' => true,
+                'message' => $paymentResult['message'] ?? 'Redirecting to payment gateway...',
+                'data' => [
+                    'order_id' => $order->id,
                     'payment_master_id' => $paymentMaster->id,
-                    'status' => 'completed',
-                    'processed_at' => Carbon::now(),
-                ]);
+                    'requires_redirect' => true,
+                    'redirect_url' => $paymentResult['redirect_url'],
+                    'status' => 'requires_action',
+                    'transaction_id' => $paymentResult['transaction_id'] ?? null,
+                ],
+            ]);
+        }
+
+        // ✅ If Payment Completed (Card / Instant Payment)
+        if ($paymentResult['status'] === 'completed') {
+
+            $subscription = $this->createSubscription($user, $order, $request, $paymentMaster);
+
+            $order->items()->update([
+                'subscription_id' => $subscription->id,
+                'subscription_status' => 'active',
+                'processed_at' => Carbon::now(),
+            ]);
+
+            $order->update([
+                'status' => 'completed',
+                'processed_at' => Carbon::now(),
+            ]);
+
+            // 🧾 Create Invoice
+            $invoice = $this->invoice($order->fresh(), $subscription->id);
+
+            // 💰 Record Payment
+            $this->payment($invoice, $order->metadata['gateway'] ?? $request->gateway);
+
+            // 💾 Save Payment Method
+            if ($request->boolean('save_payment_method') && isset($paymentResult['payment_method_id'])) {
+                $this->savePaymentMethod($user, $paymentResult, $request);
             }
 
             DB::commit();
 
             $response = [
                 'success' => true,
-                'message' => 'Checkout processed successfully',
+                'message' => 'Payment completed successfully',
                 'data' => [
                     'order_id' => $order->id,
                     'payment_master_id' => $paymentMaster->id,
-                    'requires_redirect' => $paymentResult['requires_redirect'] ?? false,
-                    'status' => $paymentResult['status'] ?? 'pending',
+                    'subscription_id' => $subscription->id,
+                    'status' => 'completed',
                 ],
             ];
 
-            // Add redirect URL if needed
-            if (isset($paymentResult['redirect_url'])) {
-                $response['data']['redirect_url'] = $paymentResult['redirect_url'];
-            }
-
-            // Add client secret for Stripe
-            if (isset($paymentResult['client_secret'])) {
-                $response['data']['client_secret'] = $paymentResult['client_secret'];
-            }
-
-            // Add authentication token for new users
+            // 🔑 Attach token if new user
             if ($otpResult['is_new_user']) {
                 $response['data']['token'] = $otpResult['token'];
                 $response['data']['user'] = [
@@ -299,25 +321,36 @@ class CheckoutController extends Controller
             }
 
             return response()->json($response);
-        } catch (Exception $e) {
-            DB::rollBack();
-            Log::error('Checkout failed: '.$e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
         }
-    }
 
-    /**
-     * Process authenticated checkout (logged in user)
-     */
-    /**
-     * Process authenticated checkout (logged in user)
-     */
+        // 🟡 Pending Payments (Bank transfer etc.)
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => $paymentResult['message'] ?? 'Payment initiated successfully',
+            'data' => [
+                'order_id' => $order->id,
+                'payment_master_id' => $paymentMaster->id,
+                'status' => $paymentResult['status'] ?? 'pending',
+                'transaction_id' => $paymentResult['transaction_id'] ?? null,
+            ],
+        ]);
+
+    } catch (Exception $e) {
+        DB::rollBack();
+
+        Log::error('OTP Checkout failed: '.$e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+
     /**
      * Process authenticated checkout (logged in user)
      */
@@ -547,7 +580,6 @@ class CheckoutController extends Controller
         if ($request->has('payment_details')) {
             $paymentData['payment_details'] = $request->payment_details;
         }
-
         switch ($gateway) {
             case 'stripe':
                 return $this->processStripePayment($paymentData, $request);
@@ -577,9 +609,10 @@ class CheckoutController extends Controller
      */
     protected function processStripePayment(array $data, Request $request): array
     {
+        $userId = $request->user()->id ?? $request->id;
         try {
             // Get existing Stripe customer ID from user's payment methods
-            $existingPaymentMethod = PaymentMethod::where('user_id', $request->user()->id)
+            $existingPaymentMethod = PaymentMethod::where('user_id', $userId )
                 ->where('gateway', 'stripe')
                 ->whereNotNull('gateway_customer_id')
                 ->first();
@@ -589,10 +622,10 @@ class CheckoutController extends Controller
             // Add customer data to payment data
             $paymentData = array_merge($data, [
                 'customer_id' => $stripeCustomerId,
-                'email' => $request->user()->email,
+                'email' => $request->user()->email ?? $request->email,
                 'name' => $request->name ?? $request->user()->name,
                 'phone' => $request->phone ?? $request->user()->phone,
-                'user_id' => $request->user()->id,
+                'user_id' => $userId,
             ]);
 
             // If using saved payment method

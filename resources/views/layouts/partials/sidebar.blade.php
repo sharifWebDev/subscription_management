@@ -51,7 +51,7 @@
 
                 
                 <li>
-                    <a href="">------</a>
+                    <a href="">------------------------</a>
                 </li>
 
 
@@ -123,7 +123,7 @@
                 </li>
 
                 <li>
-                    <a href="#">--------------</a>
+                    <a href="#">-------------------------</a>
                 </li>
 
 
@@ -131,20 +131,10 @@
                     <a href="{{ url('admin/payment-masters') }}"
                         class="nav-link {{ request()->is('admin/payment-masters*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Payment masters</p>
+                        <p>Payments</p>
                     </a>
                 </li>
  
-
-                <li class="nav-item">
-                    <a href="{{ url('admin/payment-allocations') }}"
-                        class="nav-link {{ request()->is('admin/payment-allocations*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Payment allocations</p>
-                    </a>
-                </li>
-
-
                 <li class="nav-item">
                     <a href="{{ url('admin/payment-webhook-logs') }}"
                         class="nav-link {{ request()->is('admin/payment-webhook-logs*') ? 'active' : '' }}">
@@ -153,24 +143,6 @@
                     </a>
                 </li>
 
-
-                <li class="nav-item">
-                    <a href="{{ url('admin/payments') }}"
-                        class="nav-link {{ request()->is('admin/payments*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Payments</p>
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a href="{{ url('admin/payment-transactions') }}"
-                        class="nav-link {{ request()->is('admin/payment-transactions*') ? 'active' : '' }}">
-                        <i class="nav-icon fas fa-angle-double-right"></i>
-                        <p>Payment transactions</p>
-                    </a>
-                </li>
-
-
                 <li class="nav-item">
                     <a href="{{ url('admin/payment-gateways') }}"
                         class="nav-link {{ request()->is('admin/payment-gateways*') ? 'active' : '' }}">
@@ -178,8 +150,6 @@
                         <p>Payment gateways</p>
                     </a>
                 </li>
-
-
 
                 <li class="nav-item">
                     <a href="{{ url('admin/payment-methods') }}"
