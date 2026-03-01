@@ -1,7 +1,8 @@
 {{-- resources/views/crud-generator/create.blade.php --}}
-@extends('layouts.app')
+@extends('website.layouts.app')
 
 @section('content')
+<div class="col-md-8">
 <div class="container">
     <div class="row">
         <div class="col-md-8">
@@ -81,6 +82,8 @@
             </div>
         </div>
     </div>
+</div>
+
 </div>
 
 @push('scripts')

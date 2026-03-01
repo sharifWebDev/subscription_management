@@ -47,7 +47,7 @@ class PaymentMethodResource extends BaseResource
             'verified_by' => $this->verified_by,
             'last_used_at' => $this->last_used_at?->format('M d, Y h:i A'),
             'usage_count' => (int) $this->usage_count,
-            'created_at' => $this->created_at?->format('M d, Y h:i A')
+            'created_at' => $this->created_at?->format('M d, Y h:i A'),
         ];
     }
 }

@@ -46,7 +46,7 @@ class PaymentGatewayResource extends BaseResource
             'min_amount' => $this->min_amount ? (float) $this->min_amount : 0.0,
             'max_amount' => $this->max_amount ? (float) $this->max_amount : 0.0,
             'created_at' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 }

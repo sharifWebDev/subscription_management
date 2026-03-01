@@ -13,7 +13,12 @@ class InvoiceResource extends BaseResource
     {
         return [
             'id' => $this->id,
+            'user_id' => $this->user_id,
+            'user_name' => $this->user?->name ?? 'Unknown User',
+            'subscription_id' => $this->subscription_id,
+            'subscription_name' => $this->subscription?->plan?->name ?? 'Unknown Subscription',
             'number' => $this->number,
+            'external_id' => $this->external_id,
             'status' => $this->status,
             'type' => $this->type,
             'subtotal' => (float) $this->subtotal,
@@ -25,14 +30,18 @@ class InvoiceResource extends BaseResource
             'formatted_subtotal' => $this->formatMoney($this->subtotal, $this->currency),
             'formatted_tax' => $this->formatMoney($this->tax, $this->currency),
             'formatted_total' => $this->formatMoney($this->total, $this->currency),
-            'issue_date' => $this->issue_date?->toISOString(),
-            'due_date' => $this->due_date?->toISOString(),
-            'paid_at' => $this->paid_at?->toISOString(),
+            'issue_date' => $this->issue_date?->format('M d, Y h:i A'),
+            'due_date' => $this->due_date?->format('M d, Y h:i A'),
+            'paid_at' => $this->paid_at?->format('M d, Y h:i A'),
             'line_items' => json_decode($this->line_items, true) ?? [],
+            'tax_rates' => json_decode($this->tax_rates, true) ?? [],
+            'discounts' => json_decode($this->discounts, true) ?? [],
+            'metadata' => json_decode($this->metadata, true) ?? [],
+            'history' => json_decode($this->history, true) ?? [],
             'pdf_url' => $this->pdf_url,
             'subscription' => new SubscriptionResource($this->whenLoaded('subscription')),
-            'created_at' => $this->created_at?->toISOString(),
-            'updated_at' => $this->updated_at?->toISOString(),
+            'created_at' => $this->created_at?->format('M d, Y h:i A'),
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 

@@ -79,12 +79,6 @@ class InvoiceService
                     }
                 });
             })
-            ->when(! empty($fromDate) && ! empty($toDate), function ($q) use ($fromDate, $toDate) {
-                $q->whereBetween('date', [
-                    "{$fromDate} 00:00:00",
-                    "{$toDate} 23:59:59",
-                ]);
-            })
             ->when($status, function ($q) use ($status) {
                 $q->where('status', $status);
             });

@@ -51,7 +51,7 @@ class PaymentMasterResource extends BaseResource
             'custom_fields' => $this->custom_fields ? json_decode($this->custom_fields, true) : [],
             'notes' => $this->notes,
             'failure_reason' => $this->failure_reason,
-            'created_at' => $this->created_at?->format('M d, Y h:i A')
+            'created_at' => $this->created_at?->format('M d, Y h:i A'),
         ];
     }
 }

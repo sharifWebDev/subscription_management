@@ -36,7 +36,7 @@ class PaymentResource extends BaseResource
             'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
             'fraud_indicators' => $this->fraud_indicators ? json_decode($this->fraud_indicators, true) : [],
             'created_at' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 }

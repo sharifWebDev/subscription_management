@@ -9,8 +9,8 @@
                 data-edit-url="{{ route('admin.invoices.edit', ':id') }}"
                 data-delete-url="{{ url('api/v1/invoices/destroy') }}/:id"
                 data-show-url="{{ route('admin.invoices.show', ':id') }}"
-                data-fields='["user_id", "subscription_id", "number", "external_id", "type", "status", "subtotal", "tax", "total", "amount_due", "amount_paid", "amount_remaining", "currency", "issue_date", "due_date", "paid_at", "finalized_at", "line_items", "tax_rates", "discounts", "metadata", "history", "pdf_url"]'
-                data-headers='["User", "Subscription", "Number", "External", "Type", "Status", "Subtotal", "Tax", "Total", "Amount Due", "Amount Paid", "Amount Remaining", "Currency", "Issue Date", "Due Date", "Paid At", "Finalized At", "Line Items", "Tax Rates", "Discounts", "Metadata", "History", "Pdf Url"]'
+                data-fields='["user_name", "subscription_name", "number", "type", "status", "subtotal", "tax", "total", "amount_due", "amount_paid", "amount_remaining", "currency", "issue_date", "due_date", "paid_at", "finalized_at"]'
+                data-headers='["User", "Subscription", "Number", "Type", "Status", "Subtotal", "Tax", "Total", "Amount Due", "Amount Paid", "Amount Remaining", "Currency", "Issue Date", "Due Date", "Paid At", "Finalized At"]'
                 data-filters=''
                 {{-- data-filters=']' --}}
                 data-export="true"
@@ -49,4 +49,3 @@
         }, 1000);
     </script>
     {{-- @include('components.datatables'); --}}
-    

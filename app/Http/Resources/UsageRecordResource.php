@@ -20,7 +20,7 @@ class UsageRecordResource extends BaseResource
             'subscription_name' => $this->subscription?->plan?->name ?? null,
             'subscription_item_id' => $this->subscription_item_id,
             'subscription_item_id_details' => $this->subscriptionItem,
-            'subscription_item_name' =>$this->subscriptionItem?->subscription?->plan?->name ?? null,
+            'subscription_item_name' => $this->subscriptionItem?->subscription?->plan?->name ?? null,
             'feature_id' => $this->feature_id,
             'feature_id_details' => $this->feature,
             'feature_name' => $this->feature?->name ?? null,
@@ -34,7 +34,7 @@ class UsageRecordResource extends BaseResource
             'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
             'dimensions' => $this->dimensions ? json_decode($this->dimensions, true) : [],
             'created_at' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 }

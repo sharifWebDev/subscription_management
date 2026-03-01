@@ -34,7 +34,7 @@ class MeteredUsageAggregateResource extends BaseResource
             'record_count' => (int) $this->record_count,
             'last_calculated_at' => $this->last_calculated_at?->format('M d, Y h:i A'),
             'created_at' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 }

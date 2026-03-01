@@ -1,14 +1,14 @@
 <?php
+
 // app/Services/UsageService.php
 
 namespace App\Services;
 
-use App\Models\Subscription;
-use App\Models\UsageRecord;
 use App\Models\MeteredUsageAggregate;
 use App\Models\RateLimit;
+use App\Models\Subscription;
+use App\Models\UsageRecord;
 use App\Traits\UsageTrait;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class UsageService
@@ -24,11 +24,11 @@ class UsageService
             ->whereIn('status', ['active', 'trialing'])
             ->first();
 
-        if (!$subscription) {
+        if (! $subscription) {
             return [
                 'can_use' => false,
                 'message' => 'No active subscription found',
-                'requires_subscription' => true
+                'requires_subscription' => true,
             ];
         }
 
@@ -63,7 +63,7 @@ class UsageService
     public function checkRateLimit($subscriptionId, $featureCode)
     {
         $feature = DB::table('features')->where('code', $featureCode)->first();
-        if (!$feature) {
+        if (! $feature) {
             return ['allowed' => false, 'message' => 'Feature not found'];
         }
 
@@ -74,7 +74,7 @@ class UsageService
             ->where('key', $key)
             ->first();
 
-        if (!$rateLimit) {
+        if (! $rateLimit) {
             return ['allowed' => true, 'message' => 'No rate limit configured'];
         }
 
@@ -84,7 +84,7 @@ class UsageService
                 'message' => 'Rate limit exceeded',
                 'resets_at' => $rateLimit->resets_at,
                 'remaining' => 0,
-                'max_attempts' => $rateLimit->max_attempts
+                'max_attempts' => $rateLimit->max_attempts,
             ];
         }
 
@@ -92,7 +92,7 @@ class UsageService
             'allowed' => true,
             'remaining' => $rateLimit->remaining,
             'max_attempts' => $rateLimit->max_attempts,
-            'resets_at' => $rateLimit->resets_at
+            'resets_at' => $rateLimit->resets_at,
         ];
     }
 
@@ -124,10 +124,10 @@ class UsageService
             ->whereIn('status', ['active', 'trialing'])
             ->first();
 
-        if (!$subscription) {
+        if (! $subscription) {
             return [
                 'has_subscription' => false,
-                'message' => 'No active subscription'
+                'message' => 'No active subscription',
             ];
         }
 
@@ -146,7 +146,7 @@ class UsageService
                     'feature_code' => $record->feature->code ?? null,
                     'quantity' => $record->quantity,
                     'unit' => $record->unit,
-                    'recorded_at' => $record->recorded_at->format('Y-m-d H:i:s')
+                    'recorded_at' => $record->recorded_at->format('Y-m-d H:i:s'),
                 ];
             });
 
@@ -159,14 +159,15 @@ class UsageService
             ->groupBy('feature_id')
             ->map(function ($items, $featureId) {
                 $feature = DB::table('features')->find($featureId);
+
                 return [
                     'feature' => $feature->name ?? 'Unknown',
                     'data' => $items->map(function ($item) {
                         return [
                             'date' => $item->aggregate_date,
-                            'quantity' => $item->total_quantity
+                            'quantity' => $item->total_quantity,
                         ];
-                    })
+                    }),
                 ];
             });
 
@@ -177,7 +178,7 @@ class UsageService
             'status' => $subscription->status,
             'summaries' => $summaries,
             'recent_usage' => $recentUsage,
-            'daily_aggregates' => $dailyAggregates
+            'daily_aggregates' => $dailyAggregates,
         ];
     }
 
@@ -209,7 +210,7 @@ class UsageService
     public function getUsageForecast($subscriptionId)
     {
         $subscription = Subscription::with('plan')->find($subscriptionId);
-        if (!$subscription) {
+        if (! $subscription) {
             return null;
         }
 
@@ -226,7 +227,7 @@ class UsageService
         $forecasts = [];
 
         foreach ($planFeatures as $feature) {
-            if ($feature->limit_value === 'unlimited' || !is_numeric($feature->limit_value)) {
+            if ($feature->limit_value === 'unlimited' || ! is_numeric($feature->limit_value)) {
                 continue;
             }
 
@@ -244,7 +245,7 @@ class UsageService
                 'projected_usage' => round($projectedUsage, 2),
                 'days_remaining' => $daysRemaining,
                 'will_exceed' => $projectedUsage > (float) $feature->limit_value,
-                'overage' => round(max(0, $projectedUsage - (float) $feature->limit_value), 2)
+                'overage' => round(max(0, $projectedUsage - (float) $feature->limit_value), 2),
             ];
         }
 
@@ -254,7 +255,7 @@ class UsageService
             'period_end' => $subscription->current_period_ends_at?->format('Y-m-d'),
             'days_elapsed' => $daysElapsed,
             'days_remaining' => $daysRemaining,
-            'forecasts' => $forecasts
+            'forecasts' => $forecasts,
         ];
     }
 
@@ -263,7 +264,7 @@ class UsageService
      */
     private function getDaysInPeriod($subscription)
     {
-        if (!$subscription->current_period_starts_at || !$subscription->current_period_ends_at) {
+        if (! $subscription->current_period_starts_at || ! $subscription->current_period_ends_at) {
             return 30; // Default to 30 days
         }
 
@@ -275,7 +276,7 @@ class UsageService
      */
     private function getDaysElapsed($subscription)
     {
-        if (!$subscription->current_period_starts_at) {
+        if (! $subscription->current_period_starts_at) {
             return 0;
         }
 

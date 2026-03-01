@@ -33,10 +33,9 @@ class SubscriptionEvent extends Model
         return $this->morphTo('causer');
     }
 
-    //find cuser  to user name
+    // find cuser  to user name
     public function causerUser()
     {
         return $this->belongsTo(\App\Models\User::class, 'causer_id');
     }
-
 }

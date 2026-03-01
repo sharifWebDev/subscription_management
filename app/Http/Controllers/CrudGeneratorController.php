@@ -1,10 +1,9 @@
 <?php
-// app/Http/Controllers/CrudGeneratorController.php
 
 namespace App\Http\Controllers;
 
-use App\Services\UsageService;
 use App\Models\Subscription;
+use App\Services\UsageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -51,10 +50,10 @@ class CrudGeneratorController extends Controller
             ->whereIn('status', ['active', 'trialing'])
             ->first();
 
-        if (!$subscription) {
+        if (! $subscription) {
             return response()->json([
                 'success' => false,
-                'message' => 'No active subscription found'
+                'message' => 'No active subscription found',
             ], 403);
         }
 
@@ -72,14 +71,14 @@ class CrudGeneratorController extends Controller
                 [
                     'table_name' => $request->table_name,
                     'model_name' => $request->model_name,
-                    'ip' => $request->ip()
+                    'ip' => $request->ip(),
                 ]
             );
 
-            if (!$usageResult['success']) {
+            if (! $usageResult['success']) {
                 return response()->json([
                     'success' => false,
-                    'message' => $usageResult['message']
+                    'message' => $usageResult['message'],
                 ], 400);
             }
 
@@ -90,16 +89,16 @@ class CrudGeneratorController extends Controller
                 'success' => true,
                 'message' => 'CRUD generated successfully',
                 'data' => [
-                    'usage' => $usageResult['data']
-                ]
+                    'usage' => $usageResult['data'],
+                ],
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('CRUD generation failed: ' . $e->getMessage());
+            \Log::error('CRUD generation failed: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to generate CRUD: ' . $e->getMessage()
+                'message' => 'Failed to generate CRUD: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -115,7 +114,7 @@ class CrudGeneratorController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $stats
+            'data' => $stats,
         ]);
     }
 
@@ -130,10 +129,10 @@ class CrudGeneratorController extends Controller
             ->whereIn('status', ['active', 'trialing'])
             ->first();
 
-        if (!$subscription) {
+        if (! $subscription) {
             return response()->json([
                 'success' => false,
-                'message' => 'No active subscription found'
+                'message' => 'No active subscription found',
             ], 404);
         }
 
@@ -141,7 +140,7 @@ class CrudGeneratorController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $forecast
+            'data' => $forecast,
         ]);
     }
 }

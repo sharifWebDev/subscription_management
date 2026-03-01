@@ -38,7 +38,7 @@ class PaymentAllocationResource extends BaseResource
             'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
             'notes' => $this->notes,
             'created_at' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 }

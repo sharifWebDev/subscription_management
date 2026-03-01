@@ -34,7 +34,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Stripe\PaymentIntent;
 
 class CheckoutController extends Controller
 {
@@ -188,168 +187,168 @@ class CheckoutController extends Controller
     /**
      * Verify OTP and process checkout
      */
-/**
- * Verify OTP and process checkout
- */
-public function verifyOtpAndCheckout(Request $request): JsonResponse
-{
-    $validator = Validator::make($request->all(), [
-        'email' => 'required|email',
-        'otp' => 'required|string|size:6',
-        'plan_id' => 'required|exists:plans,id',
-        'price_id' => 'required|exists:plan_prices,id',
-        'payment_method' => 'required|string',
-        'gateway' => 'required|string',
-        'name' => 'required|string|max:255',
-        'phone' => 'nullable|string|max:20',
-        'billing_address' => 'nullable|array',
-        'payment_details' => 'nullable|array',
-        'save_payment_method' => 'boolean',
-        'terms' => 'required|accepted',
-    ]);
+    /**
+     * Verify OTP and process checkout
+     */
+    public function verifyOtpAndCheckout(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+            'plan_id' => 'required|exists:plans,id',
+            'price_id' => 'required|exists:plan_prices,id',
+            'payment_method' => 'required|string',
+            'gateway' => 'required|string',
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'billing_address' => 'nullable|array',
+            'payment_details' => 'nullable|array',
+            'save_payment_method' => 'boolean',
+            'terms' => 'required|accepted',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'errors' => $validator->errors(),
-        ], 422);
-    }
-
-    DB::beginTransaction();
-
-    try {
-        // 🔐 Verify OTP & Create/Get User
-        $otpResult = $this->otpService->verifyOtpAndCreateUser(
-            $request->email,
-            $request->otp,
-            [
-                'name' => $request->name,
-                'phone' => $request->phone,
-            ]
-        );
-
-        if (! $otpResult['success']) {
+        if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => $otpResult['message'],
-            ], 400);
+                'errors' => $validator->errors(),
+            ], 422);
         }
 
-        $user = $otpResult['user'];
+        DB::beginTransaction();
 
-        // 🛒 Create Order
-        $order = $this->createOrder($user, $request);
-        $order = $order->load('items');
+        try {
+            // 🔐 Verify OTP & Create/Get User
+            $otpResult = $this->otpService->verifyOtpAndCreateUser(
+                $request->email,
+                $request->otp,
+                [
+                    'name' => $request->name,
+                    'phone' => $request->phone,
+                ]
+            );
 
-        // 💳 Create Payment Master
-        $paymentMaster = $this->createPaymentMaster($user, $order, $request);
+            if (! $otpResult['success']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $otpResult['message'],
+                ], 400);
+            }
 
-        // 🚀 Process Payment
-        $paymentResult = $this->processGatewayPayment($paymentMaster, $order, $user, $request);
+            $user = $otpResult['user'];
 
-        if (! $paymentResult['success']) {
-            throw new Exception($paymentResult['message'] ?? 'Payment processing failed');
-        }
+            // 🛒 Create Order
+            $order = $this->createOrder($user, $request);
+            $order = $order->load('items');
 
-        // 🌍 Redirect-based gateway (SSLCommerz, bKash etc.)
-        if (!empty($paymentResult['requires_redirect'])) {
+            // 💳 Create Payment Master
+            $paymentMaster = $this->createPaymentMaster($user, $order, $request);
 
+            // 🚀 Process Payment
+            $paymentResult = $this->processGatewayPayment($paymentMaster, $order, $user, $request);
+
+            if (! $paymentResult['success']) {
+                throw new Exception($paymentResult['message'] ?? 'Payment processing failed');
+            }
+
+            // 🌍 Redirect-based gateway (SSLCommerz, bKash etc.)
+            if (! empty($paymentResult['requires_redirect'])) {
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => $paymentResult['message'] ?? 'Redirecting to payment gateway...',
+                    'data' => [
+                        'order_id' => $order->id,
+                        'payment_master_id' => $paymentMaster->id,
+                        'requires_redirect' => true,
+                        'redirect_url' => $paymentResult['redirect_url'],
+                        'status' => 'requires_action',
+                        'transaction_id' => $paymentResult['transaction_id'] ?? null,
+                    ],
+                ]);
+            }
+
+            // ✅ If Payment Completed (Card / Instant Payment)
+            if ($paymentResult['status'] === 'completed') {
+
+                $subscription = $this->createSubscription($user, $order, $request, $paymentMaster);
+
+                $order->items()->update([
+                    'subscription_id' => $subscription->id,
+                    'subscription_status' => 'active',
+                    'processed_at' => Carbon::now(),
+                ]);
+
+                $order->update([
+                    'status' => 'completed',
+                    'processed_at' => Carbon::now(),
+                ]);
+
+                // 🧾 Create Invoice
+                $invoice = $this->invoice($order->fresh(), $subscription->id);
+
+                // 💰 Record Payment
+                $this->payment($invoice, $order->metadata['gateway'] ?? $request->gateway);
+
+                // 💾 Save Payment Method
+                if ($request->boolean('save_payment_method') && isset($paymentResult['payment_method_id'])) {
+                    $this->savePaymentMethod($user, $paymentResult, $request);
+                }
+
+                DB::commit();
+
+                $response = [
+                    'success' => true,
+                    'message' => 'Payment completed successfully',
+                    'data' => [
+                        'order_id' => $order->id,
+                        'payment_master_id' => $paymentMaster->id,
+                        'subscription_id' => $subscription->id,
+                        'status' => 'completed',
+                    ],
+                ];
+
+                // 🔑 Attach token if new user
+                if ($otpResult['is_new_user']) {
+                    $response['data']['token'] = $otpResult['token'];
+                    $response['data']['user'] = [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ];
+                }
+
+                return response()->json($response);
+            }
+
+            // 🟡 Pending Payments (Bank transfer etc.)
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => $paymentResult['message'] ?? 'Redirecting to payment gateway...',
+                'message' => $paymentResult['message'] ?? 'Payment initiated successfully',
                 'data' => [
                     'order_id' => $order->id,
                     'payment_master_id' => $paymentMaster->id,
-                    'requires_redirect' => true,
-                    'redirect_url' => $paymentResult['redirect_url'],
-                    'status' => 'requires_action',
+                    'status' => $paymentResult['status'] ?? 'pending',
                     'transaction_id' => $paymentResult['transaction_id'] ?? null,
                 ],
             ]);
-        }
 
-        // ✅ If Payment Completed (Card / Instant Payment)
-        if ($paymentResult['status'] === 'completed') {
+        } catch (Exception $e) {
+            DB::rollBack();
 
-            $subscription = $this->createSubscription($user, $order, $request, $paymentMaster);
-
-            $order->items()->update([
-                'subscription_id' => $subscription->id,
-                'subscription_status' => 'active',
-                'processed_at' => Carbon::now(),
+            Log::error('OTP Checkout failed: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            $order->update([
-                'status' => 'completed',
-                'processed_at' => Carbon::now(),
-            ]);
-
-            // 🧾 Create Invoice
-            $invoice = $this->invoice($order->fresh(), $subscription->id);
-
-            // 💰 Record Payment
-            $this->payment($invoice, $order->metadata['gateway'] ?? $request->gateway);
-
-            // 💾 Save Payment Method
-            if ($request->boolean('save_payment_method') && isset($paymentResult['payment_method_id'])) {
-                $this->savePaymentMethod($user, $paymentResult, $request);
-            }
-
-            DB::commit();
-
-            $response = [
-                'success' => true,
-                'message' => 'Payment completed successfully',
-                'data' => [
-                    'order_id' => $order->id,
-                    'payment_master_id' => $paymentMaster->id,
-                    'subscription_id' => $subscription->id,
-                    'status' => 'completed',
-                ],
-            ];
-
-            // 🔑 Attach token if new user
-            if ($otpResult['is_new_user']) {
-                $response['data']['token'] = $otpResult['token'];
-                $response['data']['user'] = [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                ];
-            }
-
-            return response()->json($response);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
-
-        // 🟡 Pending Payments (Bank transfer etc.)
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => $paymentResult['message'] ?? 'Payment initiated successfully',
-            'data' => [
-                'order_id' => $order->id,
-                'payment_master_id' => $paymentMaster->id,
-                'status' => $paymentResult['status'] ?? 'pending',
-                'transaction_id' => $paymentResult['transaction_id'] ?? null,
-            ],
-        ]);
-
-    } catch (Exception $e) {
-        DB::rollBack();
-
-        Log::error('OTP Checkout failed: '.$e->getMessage(), [
-            'trace' => $e->getTraceAsString(),
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage(),
-        ], 500);
     }
-}
 
     /**
      * Process authenticated checkout (logged in user)
@@ -413,6 +412,8 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
                 ]);
             }
 
+            // SSLCommerz not here because it always requires redirect, so it will never hit this point with requires_redirect = false
+
             // If payment is successful (no 3D Secure required)
             if ($paymentResult['status'] === 'completed') {
                 // Create subscription
@@ -425,7 +426,7 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
                     'processed_at' => Carbon::now(),
                 ]);
 
-               $order->update([
+                $order->update([
                     'status' => 'completed',
                     'processed_at' => Carbon::now(),
                 ]);
@@ -612,7 +613,7 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
         $userId = $request->user()->id ?? $request->id;
         try {
             // Get existing Stripe customer ID from user's payment methods
-            $existingPaymentMethod = PaymentMethod::where('user_id', $userId )
+            $existingPaymentMethod = PaymentMethod::where('user_id', $userId)
                 ->where('gateway', 'stripe')
                 ->whereNotNull('gateway_customer_id')
                 ->first();
@@ -1310,6 +1311,8 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
                     $this->activateOrderSubscription($order, $paymentMaster);
                 }
 
+                $invoice = $this->invoice($order->fresh(), $subscription->id);
+
                 DB::commit();
 
                 return response()->json([
@@ -1550,7 +1553,7 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
 
             DB::beginTransaction();
 
-             // Update transaction
+            // Update transaction
             $updateData = [
                 'status' => 'completed',
                 'completed_at' => Carbon::now(),
@@ -1585,9 +1588,9 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
                 if ($order && ! $order->processed_at) {
                     $subscription = $this->activateOrderSubscription($order, $paymentMaster);
                     $subscriptionId = $subscription->id ?? null;
-                }else {
-                Log::warning('Order not found or already processed', ['order_id' => $orderId, 'processed_at' => $order->processed_at ?? null]);
-            }
+                } else {
+                    Log::warning('Order not found or already processed', ['order_id' => $orderId, 'processed_at' => $order->processed_at ?? null]);
+                }
             }
 
             // **পেমেন্ট মেথড সংরক্ষণ করুন (SSLCommerz-এর জন্য)**
@@ -2004,7 +2007,7 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
         // Method 2: Try gateway_transaction_id if column exists
         try {
             $transaction = PaymentTransaction::where('gateway_transaction_id', $tranId)
-            ->first();
+                ->first();
             if ($transaction) {
                 return $transaction;
             }
@@ -2014,7 +2017,7 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
 
         // Method 3: Search in gateway_response JSON
         $transactions = PaymentTransaction::where('gateway_response', 'like', '%'.$tranId.'%')
-            ->orWhere('gateway_response', 'like', '%' . str_replace('SSLCOMMERZ-', '', $tranId) . '%')
+            ->orWhere('gateway_response', 'like', '%'.str_replace('SSLCOMMERZ-', '', $tranId).'%')
             ->limit(10)
             ->get();
 
@@ -2035,16 +2038,17 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
 
         // Method 4: Check by payment master metadata
         $paymentMasters = PaymentMaster::where('metadata', 'like', '%'.$tranId.'%')
-        ->orWhere('metadata', 'like', '%' . str_replace('SSLCOMMERZ-', '', $tranId) . '%')
-        ->get();
+            ->orWhere('metadata', 'like', '%'.str_replace('SSLCOMMERZ-', '', $tranId).'%')
+            ->get();
 
         foreach ($paymentMasters as $pm) {
             $metadata = json_decode($pm->metadata, true);
             if (isset($metadata['transaction_id']) && $metadata['transaction_id'] == $tranId) {
                 $tranIdWithoutPrefix = str_replace('SSLCOMMERZ-', '', $tranId);
+
                 return PaymentTransaction::where('payment_master_id', $pm->id)
-                ->orwhere('transaction_id', $tranIdWithoutPrefix)
-                ->first();
+                    ->orwhere('transaction_id', $tranIdWithoutPrefix)
+                    ->first();
             }
         }
 
@@ -2201,8 +2205,8 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
                 ]),
                 'discount_breakdown' => json_encode([
                     'name' => 'Discount',
-                        'amount' => $paymentMaster->discount_amount,
-                        'rate' => $paymentMaster->discount_amount > 0 ? round(($paymentMaster->discount_amount / $paymentMaster->total_amount) * 100, 2) : 0,
+                    'amount' => $paymentMaster->discount_amount,
+                    'rate' => $paymentMaster->discount_amount > 0 ? round(($paymentMaster->discount_amount / $paymentMaster->total_amount) * 100, 2) : 0,
                 ]),
                 'created_by' => $item->created_by,
             ]);
@@ -2211,6 +2215,8 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
 
     protected function invoice(SubscriptionOrder $order, $subscriptionId)
     {
+        \Log::info('hit invoice method', ['order_id' => $order->id, 'subscription_id' => $subscriptionId]);
+
         return Invoice::create([
             'user_id' => $order->user_id,
             'subscription_id' => $subscriptionId,
@@ -2268,37 +2274,38 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
 
     protected function generateInvoiceNumber($orderId)
     {
-        return 'INV-'.Carbon::now()->format('Ym'). '-' . $orderId.'-'.Str::upper(Str::random(10));
+        return 'INV-'.Carbon::now()->format('Ym').'-'.$orderId.'-'.Str::upper(Str::random(10));
     }
+
     protected function payment($invoice, $gateway)
     {
         return Payment::create([
-           'invoice_id' => $invoice->id,
-           'user_id' => $invoice->user_id,
-           'external_id' => 'PAY-'.Str::upper(Str::random(10)),
-           'type' => 'subscription',
-           'status' => 'succeeded',
-           'amount' => $invoice->total,
-           'fee' => 0,
-           'net_amount' => $invoice->total,
-           'currency' => $invoice->currency,
-           'gateway' => $gateway,
-           'gateway_response' => $invoice->metadata['gateway_response'] ?? null,
-           'payment_method' => $invoice->metadata['payment_method'] ?? null,
-           'processed_at' => Carbon::now(),
-           'refunded_at' => null,
-           'metadata' => json_encode([
+            'invoice_id' => $invoice->id,
+            'user_id' => $invoice->user_id,
+            'external_id' => 'PAY-'.Str::upper(Str::random(10)),
+            'type' => 'subscription',
+            'status' => 'succeeded',
+            'amount' => $invoice->total,
+            'fee' => 0,
+            'net_amount' => $invoice->total,
+            'currency' => $invoice->currency,
+            'gateway' => $gateway,
+            'gateway_response' => $invoice->metadata['gateway_response'] ?? null,
+            'payment_method' => $invoice->metadata['payment_method'] ?? null,
+            'processed_at' => Carbon::now(),
+            'refunded_at' => null,
+            'metadata' => json_encode([
                 'order_id' => $invoice->metadata['order_id'] ?? null,
                 'plan_id' => $invoice->metadata['plan_id'] ?? null,
                 'price_id' => $invoice->metadata['price_id'] ?? null,
-           ]),
-           'fraud_indicators' => json_encode([
+            ]),
+            'fraud_indicators' => json_encode([
                 'is_high_risk' => false,
                 'is_fraud' => false,
                 'risk_score' => 0,
-           ]),
-           'created_by' => auth()->id(),
-           'updated_by' => auth()->id(),
+            ]),
+            'created_by' => auth()->id(),
+            'updated_by' => auth()->id(),
         ]);
     }
 
@@ -2494,140 +2501,140 @@ public function verifyOtpAndCheckout(Request $request): JsonResponse
     }
 
     /**
- * Save SSLCommerz payment method
- */
-protected function saveSslCommerzPaymentMethod(User $user, PaymentTransaction $transaction, Request $request, PaymentMaster $paymentMaster)
-{
-    try {
-        $cardType = $request->input('card_type', '');
-        $cardBrand = $request->input('card_brand', '');
-        $cardIssuer = $request->input('card_issuer', '');
+     * Save SSLCommerz payment method
+     */
+    protected function saveSslCommerzPaymentMethod(User $user, PaymentTransaction $transaction, Request $request, PaymentMaster $paymentMaster)
+    {
+        try {
+            $cardType = $request->input('card_type', '');
+            $cardBrand = $request->input('card_brand', '');
+            $cardIssuer = $request->input('card_issuer', '');
 
-        // Generate a unique payment method ID from transaction
-        $gatewayPaymentMethodId = 'sslcommerz_' . $request->input('tran_id') . '_' . time();
+            // Generate a unique payment method ID from transaction
+            $gatewayPaymentMethodId = 'sslcommerz_'.$request->input('tran_id').'_'.time();
 
-        // Determine wallet type based on card type
-        $walletType = null;
-        $walletNumber = null;
+            // Determine wallet type based on card type
+            $walletType = null;
+            $walletNumber = null;
 
-        if (strpos($cardType, 'BKASH') !== false) {
-            $walletType = 'bkash';
-        } elseif (strpos($cardType, 'NAGAD') !== false) {
-            $walletType = 'nagad';
-        } elseif (strpos($cardType, 'ROCKET') !== false) {
-            $walletType = 'rocket';
-        } elseif (strpos($cardType, 'VISA') !== false) {
-            $walletType = 'visa';
-        } elseif (strpos($cardType, 'MASTER') !== false) {
-            $walletType = 'mastercard';
-        } elseif (strpos($cardType, 'AMEX') !== false) {
-            $walletType = 'amex';
-        } else {
-            $walletType = strtolower(str_replace(' ', '_', $cardType));
-        }
+            if (strpos($cardType, 'BKASH') !== false) {
+                $walletType = 'bkash';
+            } elseif (strpos($cardType, 'NAGAD') !== false) {
+                $walletType = 'nagad';
+            } elseif (strpos($cardType, 'ROCKET') !== false) {
+                $walletType = 'rocket';
+            } elseif (strpos($cardType, 'VISA') !== false) {
+                $walletType = 'visa';
+            } elseif (strpos($cardType, 'MASTER') !== false) {
+                $walletType = 'mastercard';
+            } elseif (strpos($cardType, 'AMEX') !== false) {
+                $walletType = 'amex';
+            } else {
+                $walletType = strtolower(str_replace(' ', '_', $cardType));
+            }
 
-        // Prepare payment result data
-        $paymentResult = [
-            'payment_method_id' => $gatewayPaymentMethodId,
-            'customer_id' => $user->id,
-            'card_brand' => $cardBrand,
-            'card_last4' => substr($request->input('bank_tran_id', ''), -4),
-            'card_exp_month' => null,
-            'card_exp_year' => null,
-            'wallet_type' => $walletType,
-            'bank_name' => $cardIssuer,
-            'fingerprint' => $request->input('val_id'),
-        ];
+            // Prepare payment result data
+            $paymentResult = [
+                'payment_method_id' => $gatewayPaymentMethodId,
+                'customer_id' => $user->id,
+                'card_brand' => $cardBrand,
+                'card_last4' => substr($request->input('bank_tran_id', ''), -4),
+                'card_exp_month' => null,
+                'card_exp_year' => null,
+                'wallet_type' => $walletType,
+                'bank_name' => $cardIssuer,
+                'fingerprint' => $request->input('val_id'),
+            ];
 
-        // Create a new request with gateway info
-        $methodRequest = new Request();
-        $methodRequest->merge([
-            'payment_method' => $walletType,
-            'gateway' => 'sslcommerz',
-            'payment_details' => [
-                'card_type' => $cardType,
-                'card_issuer' => $cardIssuer,
-                'transaction_id' => $request->input('tran_id'),
-                'val_id' => $request->input('val_id'),
-            ],
-            'metadata' => [
-                'order_id' => $paymentMaster->metadata['order_id'] ?? null,
-                'payment_master_id' => $paymentMaster->id,
-            ]
-        ]);
+            // Create a new request with gateway info
+            $methodRequest = new Request;
+            $methodRequest->merge([
+                'payment_method' => $walletType,
+                'gateway' => 'sslcommerz',
+                'payment_details' => [
+                    'card_type' => $cardType,
+                    'card_issuer' => $cardIssuer,
+                    'transaction_id' => $request->input('tran_id'),
+                    'val_id' => $request->input('val_id'),
+                ],
+                'metadata' => [
+                    'order_id' => $paymentMaster->metadata['order_id'] ?? null,
+                    'payment_master_id' => $paymentMaster->id,
+                ],
+            ]);
 
-        // Check if this payment method already exists
-        $existingMethod = PaymentMethod::where('user_id', $user->id)
-            ->where('gateway', 'sslcommerz')
-            ->where(function($query) use ($walletType, $cardIssuer) {
-                $query->where('wallet_type', $walletType)
-                      ->orWhere('bank_name', $cardIssuer);
-            })
-            ->first();
+            // Check if this payment method already exists
+            $existingMethod = PaymentMethod::where('user_id', $user->id)
+                ->where('gateway', 'sslcommerz')
+                ->where(function ($query) use ($walletType, $cardIssuer) {
+                    $query->where('wallet_type', $walletType)
+                        ->orWhere('bank_name', $cardIssuer);
+                })
+                ->first();
 
-        if ($existingMethod) {
-            // Update existing method
-            $existingMethod->update([
+            if ($existingMethod) {
+                // Update existing method
+                $existingMethod->update([
+                    'last_used_at' => Carbon::now(),
+                    'usage_count' => $existingMethod->usage_count + 1,
+                    'gateway_metadata' => json_encode(array_merge(
+                        json_decode($existingMethod->gateway_metadata ?? '{}', true),
+                        ['last_transaction_id' => $request->input('tran_id')]
+                    )),
+                ]);
+
+                Log::info('Existing SSLCommerz payment method updated', [
+                    'method_id' => $existingMethod->id,
+                    'user_id' => $user->id,
+                ]);
+
+                return;
+            }
+
+            // Create new payment method
+            $paymentMethod = PaymentMethod::create([
+                'user_id' => $user->id,
+                'type' => $walletType,
+                'gateway' => 'sslcommerz',
+                'gateway_customer_id' => null, // SSLCommerz doesn't have customer ID
+                'gateway_payment_method_id' => $gatewayPaymentMethodId,
+                'is_default' => ! PaymentMethod::where('user_id', $user->id)->exists(),
+                'is_verified' => true,
+                'verified_at' => Carbon::now(),
+                'card_brand' => $cardBrand,
+                'card_last4' => $paymentResult['card_last4'],
+                'wallet_type' => $walletType,
+                'wallet_number' => null,
+                'bank_name' => $cardIssuer,
+                'metadata' => json_encode([
+                    'card_type' => $cardType,
+                    'card_issuer' => $cardIssuer,
+                    'initial_transaction' => $request->input('tran_id'),
+                ]),
+                'gateway_metadata' => json_encode([
+                    'val_id' => $request->input('val_id'),
+                    'tran_id' => $request->input('tran_id'),
+                    'card_type' => $cardType,
+                    'card_issuer' => $cardIssuer,
+                ]),
                 'last_used_at' => Carbon::now(),
-                'usage_count' => $existingMethod->usage_count + 1,
-                'gateway_metadata' => json_encode(array_merge(
-                    json_decode($existingMethod->gateway_metadata ?? '{}', true),
-                    ['last_transaction_id' => $request->input('tran_id')]
-                )),
+                'usage_count' => 1,
+                'verified_by' => $user->id,
+                'created_by' => $user->id,
             ]);
 
-            Log::info('Existing SSLCommerz payment method updated', [
-                'method_id' => $existingMethod->id,
-                'user_id' => $user->id
+            Log::info('New SSLCommerz payment method saved', [
+                'method_id' => $paymentMethod->id,
+                'user_id' => $user->id,
+                'wallet_type' => $walletType,
             ]);
 
-            return;
+        } catch (Exception $e) {
+            Log::error('Failed to save SSLCommerz payment method: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'user_id' => $user->id ?? null,
+            ]);
+            // Don't throw exception - payment already successful
         }
-
-        // Create new payment method
-        $paymentMethod = PaymentMethod::create([
-            'user_id' => $user->id,
-            'type' => $walletType,
-            'gateway' => 'sslcommerz',
-            'gateway_customer_id' => null, // SSLCommerz doesn't have customer ID
-            'gateway_payment_method_id' => $gatewayPaymentMethodId,
-            'is_default' => !PaymentMethod::where('user_id', $user->id)->exists(),
-            'is_verified' => true,
-            'verified_at' => Carbon::now(),
-            'card_brand' => $cardBrand,
-            'card_last4' => $paymentResult['card_last4'],
-            'wallet_type' => $walletType,
-            'wallet_number' => null,
-            'bank_name' => $cardIssuer,
-            'metadata' => json_encode([
-                'card_type' => $cardType,
-                'card_issuer' => $cardIssuer,
-                'initial_transaction' => $request->input('tran_id'),
-            ]),
-            'gateway_metadata' => json_encode([
-                'val_id' => $request->input('val_id'),
-                'tran_id' => $request->input('tran_id'),
-                'card_type' => $cardType,
-                'card_issuer' => $cardIssuer,
-            ]),
-            'last_used_at' => Carbon::now(),
-            'usage_count' => 1,
-            'verified_by' => $user->id,
-            'created_by' => $user->id,
-        ]);
-
-        Log::info('New SSLCommerz payment method saved', [
-            'method_id' => $paymentMethod->id,
-            'user_id' => $user->id,
-            'wallet_type' => $walletType
-        ]);
-
-    } catch (Exception $e) {
-        Log::error('Failed to save SSLCommerz payment method: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString(),
-            'user_id' => $user->id ?? null
-        ]);
-        // Don't throw exception - payment already successful
     }
-}
 }

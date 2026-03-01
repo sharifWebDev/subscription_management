@@ -32,7 +32,7 @@ class SubscriptionItemResource extends BaseResource
             'effective_from' => $this->effective_from?->format('M d, Y h:i A'),
             'effective_to' => $this->effective_to?->format('M d, Y h:i A'),
             'created_at' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 }

@@ -14,9 +14,6 @@
     <!-- Font Awesome 6 -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
     <!-- Toastr CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
 
@@ -134,16 +131,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .skeleton {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-            border-radius: 4px;
-        }
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
     </style>
 
     @stack('styles')
@@ -192,7 +179,57 @@
 
     <!-- Page Content -->
     <main>
+        <div class="container mt-4">
+            <div class="row">
+               @if(!request()->routeIs('website.plans.*') && !request()->routeIs('website.checkout.*'))
+         <!-- Sidebar -->
+            <div class="col-lg-3">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body text-center">
+                        <img src="{{ auth()->user()->avatar ?? 'https://via.placeholder.com/100' }}"
+                             class="rounded-circle mb-3" width="80" height="80" alt="Profile">
+                        <h5 class="mb-1">{{ auth()->user()->name }}</h5>
+                        <p class="text-muted small mb-3">{{ auth()->user()->email }}</p>
+                        <div class="d-grid">
+                            <a href="{{ route('website.dashboard.profile') }}" class="btn btn-outline-primary btn-sm active">
+                                <i class="fas fa-user-edit me-2"></i>Edit Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="list-group shadow-sm">
+                    <a href="{{ route('website.dashboard.subscriptions') }}"
+                       class="list-group-item list-group-item-action">
+                        <i class="fas fa-tags me-2"></i>My Subscriptions
+                    </a>
+                    <a href="{{ route('website.dashboard.invoices') }}"
+                       class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-invoice me-2"></i>Invoices
+                    </a>
+                    <a href="{{ route('website.dashboard.payment-methods') }}"
+                       class="list-group-item list-group-item-action">
+                        <i class="fas fa-credit-card me-2"></i>Payment Methods
+                    </a>
+                    <a href="{{ route('website.dashboard.usage') }}"
+                       class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-line me-2"></i>Usage Statistics
+                    </a>
+                    {{-- crud-generates --}}
+                    <a href="{{ url('/crud-generator') }}"
+                       class="list-group-item list-group-item-action">
+                        <i class="fas fa-cog me-2"></i>crud-generator
+                    </a>
+                    <a href="{{ route('website.dashboard.settings') }}"
+                       class="list-group-item list-group-item-action">
+                        <i class="fas fa-cog me-2"></i>Settings
+                    </a>
+                </div>
+            </div>
+                @endif
         @yield('content')
+        </div>
+        </div>
     </main>
 
     <!-- Footer -->

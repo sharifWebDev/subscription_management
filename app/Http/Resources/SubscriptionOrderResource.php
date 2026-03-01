@@ -40,7 +40,7 @@ class SubscriptionOrderResource extends BaseResource
             'notes' => $this->notes,
             'failure_reason' => $this->failure_reason,
             'created_at' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 }

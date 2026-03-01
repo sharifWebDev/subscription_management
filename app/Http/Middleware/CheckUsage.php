@@ -1,12 +1,13 @@
 <?php
+
 // app/Http/Middleware/CheckUsage.php
 
 namespace App\Http\Middleware;
 
+use App\Services\UsageService;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Services\UsageService;
 
 class CheckUsage
 {
@@ -20,8 +21,6 @@ class CheckUsage
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @param  string  $feature
      * @param  int  $quantity
      * @return mixed
@@ -29,13 +28,14 @@ class CheckUsage
     public function handle(Request $request, Closure $next, $feature, $quantity = 1)
     {
         // Check if user is logged in
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Please login to access this feature'
+                    'message' => 'Please login to access this feature',
                 ], 401);
             }
+
             return redirect()->route('login')->with('error', 'Please login to access this feature');
         }
 
@@ -44,12 +44,12 @@ class CheckUsage
         // Check if user can use the feature
         $canUse = $this->usageService->canUseFeature($user->id, $feature, $quantity);
 
-        if (!$canUse['allowed']) {
+        if (! $canUse['allowed']) {
             \Log::warning('Usage check failed', [
                 'user_id' => $user->id,
                 'feature' => $feature,
                 'quantity' => $quantity,
-                'reason' => $canUse['message']
+                'reason' => $canUse['message'],
             ]);
 
             if ($request->expectsJson()) {
@@ -62,8 +62,8 @@ class CheckUsage
                         'current_usage' => $canUse['current'] ?? null,
                         'limit' => $canUse['limit'] ?? null,
                         'remaining' => $canUse['remaining'] ?? null,
-                        'upgrade_url' => route('website.plans.index')
-                    ]
+                        'upgrade_url' => route('website.plans.index'),
+                    ],
                 ], 403);
             }
 
@@ -77,8 +77,8 @@ class CheckUsage
                 'feature' => $feature,
                 'quantity' => $quantity,
                 'allowed' => true,
-                'remaining' => $canUse['remaining'] ?? null
-            ]
+                'remaining' => $canUse['remaining'] ?? null,
+            ],
         ]);
 
         return $next($request);

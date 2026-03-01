@@ -65,7 +65,7 @@ class PaymentTransactionResource extends BaseResource
             'user_agent' => $this->user_agent,
             'location_data' => $this->location_data ? json_decode($this->location_data, true) : [],
             'created_at' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 }

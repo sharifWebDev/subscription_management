@@ -49,7 +49,7 @@ class RefundResource extends BaseResource
             'processed_by' => $this->processed_by,
             'rejection_reason' => $this->rejection_reason,
             'created_at' => $this->created_at?->format('M d, Y h:i A'),
-            'updated_at' => $this->updated_at?->format('M d, Y h:i A')
+            'updated_at' => $this->updated_at?->format('M d, Y h:i A'),
         ];
     }
 }

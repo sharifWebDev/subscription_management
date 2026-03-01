@@ -47,7 +47,7 @@ class PaymentChildResource extends BaseResource
             'metadata' => $this->metadata ? json_decode($this->metadata, true) : [],
             'tax_breakdown' => $this->tax_breakdown ? json_decode($this->tax_breakdown, true) : [],
             'discount_breakdown' => $this->discount_breakdown ? json_decode($this->discount_breakdown, true) : [],
-            'created_at' => $this->created_at?->format('M d, Y h:i A')
+            'created_at' => $this->created_at?->format('M d, Y h:i A'),
         ];
     }
 }

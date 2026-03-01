@@ -73,10 +73,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/*',
             'api/webhooks/*',
             'api/v1/webhooks/*',
-            ]);
+        ]);
 
-            // Add middleware aliases if needed
-            $middleware->alias([
+        // Add middleware aliases if needed
+        $middleware->alias([
             'throttle.payment' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
             'subscription' => \App\Http\Middleware\CheckSubscription::class,
             'usage' => \App\Http\Middleware\CheckUsage::class,
@@ -95,18 +95,19 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         // Handle CSRF token mismatch
         $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, Request $request) {
-            Log::warning('CSRF token mismatch', [
+            Log::warning('CSRF token mismatch - possible session expiration', [
                 'url' => $request->fullUrl(),
-                'method' => $request->method(),
-                'ip' => $request->ip(),
             ]);
 
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Session expired',
+                    'status' => 419,
+                ], 419);
+            }
             // For payment callbacks, don't throw error
             if ($request->is('payment/*')) {
-                Log::info('Payment callback with CSRF issue - attempting graceful handling', [
-                    'url' => $request->fullUrl(),
-                ]);
-
                 // Redirect to appropriate payment page
                 if ($request->is('payment/sslcommerz/success')) {
                     return redirect()->route('payment.sslcommerz.success', $request->query());
@@ -124,17 +125,16 @@ return Application::configure(basePath: dirname(__DIR__))
         // Handle 419 HTTP exception
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, Request $request) {
             if ($e->getStatusCode() === 419) {
+                Log::warning('HTTP 419 error - session expired', [
+                    'url' => $request->fullUrl(),
+                ]);
+
                 // For payment callbacks, handle gracefully
                 if ($request->is('payment/*')) {
-                    Log::info('419 on payment callback - handling gracefully', [
-                        'url' => $request->fullUrl(),
-                    ]);
 
                     return redirect()->route('website.plans.index')
                         ->with('info', 'Payment received. We will verify and activate your subscription shortly.');
                 }
-
-                // For API requests
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
@@ -143,7 +143,6 @@ return Application::configure(basePath: dirname(__DIR__))
                     ], 419);
                 }
 
-                // For web requests
                 return redirect()->route('login')->with('error', 'Your session has expired. Please login again.');
             }
         });

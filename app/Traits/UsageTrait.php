@@ -1,13 +1,13 @@
 <?php
+
 // app/Traits/UsageTrait.php
 
 namespace App\Traits;
 
-use App\Models\Subscription;
-use App\Models\UsageRecord;
 use App\Models\MeteredUsageAggregate;
 use App\Models\RateLimit;
-use Carbon\Carbon;
+use App\Models\Subscription;
+use App\Models\UsageRecord;
 use Illuminate\Support\Facades\DB;
 
 trait UsageTrait
@@ -22,7 +22,7 @@ trait UsageTrait
 
             // Get feature ID
             $feature = DB::table('features')->where('code', $featureCode)->first();
-            if (!$feature) {
+            if (! $feature) {
                 throw new \Exception("Feature not found: {$featureCode}");
             }
 
@@ -32,19 +32,20 @@ trait UsageTrait
                 ->where('feature_id', $feature->id)
                 ->first();
 
-            if (!$subscriptionItem) {
+            if (! $subscriptionItem) {
                 throw new \Exception("Subscription item not found for feature: {$featureCode}");
             }
 
             // Check if within limits
             $canUse = $this->checkUsageLimit($subscriptionId, $featureCode, $quantity);
 
-            if (!$canUse['allowed']) {
+            if (! $canUse['allowed']) {
                 DB::rollBack();
+
                 return [
                     'success' => false,
                     'message' => $canUse['message'],
-                    'data' => $canUse
+                    'data' => $canUse,
                 ];
             }
 
@@ -58,7 +59,7 @@ trait UsageTrait
                 'status' => 'pending',
                 'recorded_at' => now(),
                 'billing_date' => now()->toDateString(),
-                'metadata' => json_encode($metadata)
+                'metadata' => json_encode($metadata),
             ]);
 
             // Update metered usage aggregates
@@ -75,11 +76,11 @@ trait UsageTrait
                     'feature' => $featureCode,
                     'quantity' => $quantity,
                     'unit' => $unit,
-                    'recorded_at' => now()->toDateTimeString()
+                    'recorded_at' => now()->toDateTimeString(),
                 ]),
                 'occurred_at' => now(),
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
 
             DB::commit();
@@ -95,21 +96,21 @@ trait UsageTrait
                     'current_usage' => $summary['current_usage'],
                     'limit' => $summary['limit'],
                     'percentage' => $summary['percentage'],
-                    'remaining' => $summary['remaining']
-                ]
+                    'remaining' => $summary['remaining'],
+                ],
             ];
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Usage recording failed: ' . $e->getMessage(), [
+            \Log::error('Usage recording failed: '.$e->getMessage(), [
                 'subscription_id' => $subscriptionId,
                 'feature' => $featureCode,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return [
                 'success' => false,
-                'message' => 'Failed to record usage: ' . $e->getMessage()
+                'message' => 'Failed to record usage: '.$e->getMessage(),
             ];
         }
     }
@@ -121,19 +122,21 @@ trait UsageTrait
     {
         // Get subscription
         $subscription = Subscription::with('plan')->find($subscriptionId);
-        if (!$subscription) {
+        if (! $subscription) {
             return [
                 'allowed' => false,
-                'message' => 'Subscription not found'
+                'message' => 'Subscription not found',
             ];
         }
 
+        // dd($featureCode);
+
         // Get feature
         $feature = DB::table('features')->where('code', $featureCode)->first();
-        if (!$feature) {
+        if (! $feature) {
             return [
                 'allowed' => false,
-                'message' => 'Feature not found'
+                'message' => 'Feature not found',
             ];
         }
 
@@ -143,11 +146,11 @@ trait UsageTrait
             ->where('feature_id', $feature->id)
             ->first();
 
-        if (!$planFeature) {
+        if (! $planFeature) {
             return [
                 'allowed' => false,
                 'message' => 'Feature not available in your plan',
-                'requires_upgrade' => true
+                'requires_upgrade' => true,
             ];
         }
 
@@ -156,7 +159,7 @@ trait UsageTrait
             return [
                 'allowed' => false,
                 'message' => 'Feature not enabled in your plan',
-                'requires_upgrade' => true
+                'requires_upgrade' => true,
             ];
         }
 
@@ -166,7 +169,7 @@ trait UsageTrait
                 'allowed' => true,
                 'message' => 'Unlimited usage',
                 'limit' => 'unlimited',
-                'current' => 0
+                'current' => 0,
             ];
         }
 
@@ -185,7 +188,7 @@ trait UsageTrait
                     'limit' => $limit,
                     'current' => $currentUsage,
                     'attempted' => $currentUsage + $quantity,
-                    'remaining' => max(0, $limit - $currentUsage)
+                    'remaining' => max(0, $limit - $currentUsage),
                 ];
             }
 
@@ -195,13 +198,13 @@ trait UsageTrait
                 'limit' => $limit,
                 'current' => $currentUsage,
                 'remaining' => $limit - $currentUsage,
-                'percentage' => round(($currentUsage / $limit) * 100, 2)
+                'percentage' => round(($currentUsage / $limit) * 100, 2),
             ];
         }
 
         return [
             'allowed' => true,
-            'message' => 'Usage allowed'
+            'message' => 'Usage allowed',
         ];
     }
 
@@ -212,14 +215,14 @@ trait UsageTrait
     {
         $subscription = Subscription::find($subscriptionId);
 
-        if (!$subscription) {
+        if (! $subscription) {
             return 0;
         }
 
         // Determine billing period based on plan
         $period = $subscription->plan->billing_period ?? 'monthly';
 
-        $startDate = match($period) {
+        $startDate = match ($period) {
             'monthly' => now()->startOfMonth(),
             'yearly' => now()->startOfYear(),
             'quarterly' => now()->startOfQuarter(),
@@ -247,12 +250,12 @@ trait UsageTrait
                 'subscription_id' => $subscriptionId,
                 'feature_id' => $featureId,
                 'aggregate_date' => $today,
-                'aggregate_period' => 'daily'
+                'aggregate_period' => 'daily',
             ],
             [
                 'total_quantity' => DB::raw("total_quantity + {$quantity}"),
-                'record_count' => DB::raw("record_count + 1"),
-                'last_calculated_at' => now()
+                'record_count' => DB::raw('record_count + 1'),
+                'last_calculated_at' => now(),
             ]
         );
 
@@ -261,13 +264,13 @@ trait UsageTrait
             [
                 'subscription_id' => $subscriptionId,
                 'feature_id' => $featureId,
-                'aggregate_date' => $month . '-01',
-                'aggregate_period' => 'monthly'
+                'aggregate_date' => $month.'-01',
+                'aggregate_period' => 'monthly',
             ],
             [
                 'total_quantity' => DB::raw("total_quantity + {$quantity}"),
-                'record_count' => DB::raw("record_count + 1"),
-                'last_calculated_at' => now()
+                'record_count' => DB::raw('record_count + 1'),
+                'last_calculated_at' => now(),
             ]
         );
     }
@@ -297,7 +300,7 @@ trait UsageTrait
     public function initializeRateLimits($subscriptionId)
     {
         $subscription = Subscription::with('plan')->find($subscriptionId);
-        if (!$subscription) {
+        if (! $subscription) {
             return false;
         }
 
@@ -312,7 +315,7 @@ trait UsageTrait
                 $key = "subscription:{$subscriptionId}:feature:{$planFeature->feature_id}";
 
                 // Determine decay seconds based on plan billing period
-                $decaySeconds = match($subscription->plan->billing_period ?? 'monthly') {
+                $decaySeconds = match ($subscription->plan->billing_period ?? 'monthly') {
                     'monthly' => 30 * 24 * 60 * 60,
                     'yearly' => 365 * 24 * 60 * 60,
                     'quarterly' => 90 * 24 * 60 * 60,
@@ -324,13 +327,13 @@ trait UsageTrait
                     [
                         'subscription_id' => $subscriptionId,
                         'feature_id' => $planFeature->feature_id,
-                        'key' => $key
+                        'key' => $key,
                     ],
                     [
                         'max_attempts' => (int) $planFeature->value,
                         'decay_seconds' => $decaySeconds,
                         'remaining' => (int) $planFeature->value,
-                        'resets_at' => now()->addSeconds($decaySeconds)
+                        'resets_at' => now()->addSeconds($decaySeconds),
                     ]
                 );
             }
@@ -345,12 +348,12 @@ trait UsageTrait
     public function getUsageSummary($subscriptionId, $featureCode)
     {
         $feature = DB::table('features')->where('code', $featureCode)->first();
-        if (!$feature) {
+        if (! $feature) {
             return null;
         }
 
         $subscription = Subscription::with('plan')->find($subscriptionId);
-        if (!$subscription) {
+        if (! $subscription) {
             return null;
         }
 
@@ -372,7 +375,7 @@ trait UsageTrait
             'is_unlimited' => $isUnlimited,
             'percentage' => $isUnlimited ? 0 : round(($currentUsage / max(1, (float) $limit)) * 100, 2),
             'remaining' => $isUnlimited ? 'unlimited' : max(0, (float) $limit - $currentUsage),
-            'period' => $subscription->plan->billing_period ?? 'monthly'
+            'period' => $subscription->plan->billing_period ?? 'monthly',
         ];
     }
 
@@ -382,7 +385,7 @@ trait UsageTrait
     public function getAllUsageSummaries($subscriptionId)
     {
         $subscription = Subscription::with('plan')->find($subscriptionId);
-        if (!$subscription) {
+        if (! $subscription) {
             return [];
         }
 
@@ -408,7 +411,7 @@ trait UsageTrait
                     : 0,
                 'remaining' => $feature->limit_value === 'unlimited'
                     ? 'unlimited'
-                    : (is_numeric($feature->limit_value) ? max(0, (float) $feature->limit_value - $currentUsage) : 0)
+                    : (is_numeric($feature->limit_value) ? max(0, (float) $feature->limit_value - $currentUsage) : 0),
             ];
         }
 
@@ -442,7 +445,7 @@ trait UsageTrait
             RateLimit::where('subscription_id', $subscriptionId)
                 ->update([
                     'remaining' => DB::raw('max_attempts'),
-                    'resets_at' => now()->addSeconds(DB::raw('decay_seconds'))
+                    'resets_at' => now()->addSeconds(DB::raw('decay_seconds')),
                 ]);
 
             DB::commit();
@@ -451,7 +454,8 @@ trait UsageTrait
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Usage reset failed: ' . $e->getMessage());
+            \Log::error('Usage reset failed: '.$e->getMessage());
+
             return false;
         }
     }

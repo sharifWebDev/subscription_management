@@ -380,15 +380,11 @@ Route::get('/health', function () {
     return response()->json(['status' => 'ok', 'timestamp' => now()]);
 });
 
-
-
-
-
-// Basic subscription check (any active subscription or free plan)
-Route::middleware(['auth', 'subscription'])->group(function () {
-    Route::get('/crud-generator', [CrudGeneratorController::class, 'create']);
-    Route::post('/crud-generator/generate', [CrudGeneratorController::class, 'generate']);
-});
+// // Basic subscription check (any active subscription or free plan)
+// Route::middleware(['auth', 'subscription'])->group(function () {
+//     Route::get('/crud-generator', [CrudGeneratorController::class, 'create']);
+//     Route::post('/crud-generator/generate', [CrudGeneratorController::class, 'generate']);
+// });
 
 // // Specific plan check (e.g., 'starter', 'professional', 'enterprise')
 // Route::middleware(['auth', 'subscription:professional'])->group(function () {
