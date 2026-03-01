@@ -379,3 +379,28 @@ Route::prefix('webhooks')->name('webhooks.')->group(function () {
 Route::get('/health', function () {
     return response()->json(['status' => 'ok', 'timestamp' => now()]);
 });
+
+
+
+
+
+// Basic subscription check (any active subscription or free plan)
+Route::middleware(['auth', 'subscription'])->group(function () {
+    Route::get('/crud-generator', [CrudGeneratorController::class, 'create']);
+    Route::post('/crud-generator/generate', [CrudGeneratorController::class, 'generate']);
+});
+
+// // Specific plan check (e.g., 'starter', 'professional', 'enterprise')
+// Route::middleware(['auth', 'subscription:professional'])->group(function () {
+//     Route::get('/advanced-features', [AdvancedFeatureController::class, 'index']);
+// });
+
+// // Check specific feature (e.g., 'crud_generation' feature)
+// Route::middleware(['auth', 'subscription:any,crud_generation'])->group(function () {
+//     Route::get('/generate-crud', [CrudGeneratorController::class, 'create']);
+// });
+
+// // API routes with subscription check
+// Route::middleware(['auth:sanctum', 'subscription'])->prefix('v1')->group(function () {
+//     Route::post('/crud/generate', [CrudGeneratorController::class, 'generate']);
+// });

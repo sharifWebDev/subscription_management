@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\CrudGeneratorController;
 use App\Http\Controllers\Website\CheckoutViewController;
 use App\Http\Controllers\Website\DashboardController;
 use App\Http\Controllers\Website\PlanViewController;
 use Illuminate\Support\Facades\Route;
+
 
 Route::get('/', function () {
     return redirect()->route('website.plans.index');
@@ -46,3 +48,28 @@ Route::middleware(['auth'])->prefix('dashboard')
 //         Route::get('cancel', [App\Http\Controllers\Api\V1\CheckoutController::class, 'handleCallback'])->name('cancel')->defaults('gateway', 'sslcommerz');
 //     });
 // });
+
+
+
+// Web routes with middleware
+Route::middleware(['auth'])->group(function () {
+
+    // Check subscription + usage for CRUD generation
+    Route::middleware(['subscription', 'usage:crud_generation,1'])->group(function () {
+        Route::get('/crud-generator', [CrudGeneratorController::class, 'create'])->name('crud.generator.create');
+        Route::post('/crud-generator/generate', [CrudGeneratorController::class, 'generate'])->name('crud.generator.generate');
+    });
+
+    // Usage statistics
+    Route::get('/usage-stats', [CrudGeneratorController::class, 'usageStats'])->name('usage.stats');
+    Route::get('/usage-forecast', [CrudGeneratorController::class, 'usageForecast'])->name('usage.forecast');
+});
+
+// API routes
+Route::middleware(['auth:sanctum', 'subscription', 'usage:crud_generation,1'])
+    ->prefix('v1')
+    ->group(function () {
+        Route::post('/crud/generate', [CrudGeneratorController::class, 'generate']);
+        Route::get('/usage/stats', [CrudGeneratorController::class, 'usageStats']);
+        Route::get('/usage/forecast', [CrudGeneratorController::class, 'usageForecast']);
+    });

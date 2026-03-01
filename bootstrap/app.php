@@ -73,11 +73,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/*',
             'api/webhooks/*',
             'api/v1/webhooks/*',
-        ]);
+            ]);
 
-        // Add middleware aliases if needed
-        $middleware->alias([
+            // Add middleware aliases if needed
+            $middleware->alias([
             'throttle.payment' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+            'subscription' => \App\Http\Middleware\CheckSubscription::class,
+            'usage' => \App\Http\Middleware\CheckUsage::class,
         ]);
 
         // Add middleware groups
@@ -89,6 +91,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
     })
+
     ->withExceptions(function (Exceptions $exceptions) {
         // Handle CSRF token mismatch
         $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, Request $request) {

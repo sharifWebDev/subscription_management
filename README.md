@@ -546,3 +546,164 @@ Request Refund → Calculate Prorated → Process Refund → Update Records → 
 10. **ওয়েবহুক** পেমেন্ট আপডেট এবং অন্যান্য ইভেন্ট হ্যান্ডেল করে
 
 এই পুরো সিস্টেমটি **মডুলার**, **স্কেলেবল** এবং **মেইনটেইনেবল** করে ডিজাইন করা হয়েছে।
+
+
+
+
+## ডাটাবেজের জন্য আপডেটেড সাবস্ক্রিপশন মিডলওয়্যার
+ 
+ 
+```php
+    'subscription' => \App\Http\Middleware\CheckSubscription::class,
+```
+
+## মিডলওয়্যার ব্যবহারের উদাহরণ
+
+### **routes/web.php**
+
+```php
+<?php
+
+use App\Http\Controllers\CrudGeneratorController;
+
+// Basic subscription check (any active subscription or free plan)
+Route::middleware(['auth', 'subscription'])->group(function () {
+    Route::get('/crud-generator', [CrudGeneratorController::class, 'create']);
+    Route::post('/crud-generator/generate', [CrudGeneratorController::class, 'generate']);
+});
+
+// Specific plan check (e.g., 'starter', 'professional', 'enterprise')
+Route::middleware(['auth', 'subscription:professional'])->group(function () {
+    Route::get('/advanced-features', [AdvancedFeatureController::class, 'index']);
+});
+
+// Check specific feature (e.g., 'crud_generation' feature)
+Route::middleware(['auth', 'subscription:any,crud_generation'])->group(function () {
+    Route::get('/generate-crud', [CrudGeneratorController::class, 'create']);
+});
+
+// API routes with subscription check
+Route::middleware(['auth:sanctum', 'subscription'])->prefix('v1')->group(function () {
+    Route::post('/crud/generate', [CrudGeneratorController::class, 'generate']);
+});
+```
+
+## কন্ট্রোলারে ব্যবহারের উদাহরণ
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Subscription;
+
+class CrudGeneratorController extends Controller
+{
+    public function create()
+    {
+        $user = Auth::user();
+        $subscription = Subscription::where('user_id', $user->id)
+            ->whereIn('status', ['active', 'trialing'])
+            ->with('plan')
+            ->first();
+        
+        return view('crud-generator.create', compact('subscription'));
+    }
+
+    public function generate(Request $request)
+    {
+        // The middleware already verified subscription
+        $user = Auth::user();
+        
+        // Get subscription for usage tracking
+        $subscription = Subscription::where('user_id', $user->id)
+            ->whereIn('status', ['active', 'trialing'])
+            ->first();
+        
+        // Check monthly limit from plan_features
+        $feature = \DB::table('plan_features')
+            ->join('features', 'plan_features.feature_id', '=', 'features.id')
+            ->where('plan_features.plan_id', $subscription->plan_id)
+            ->where('features.code', 'crud_generation')
+            ->first();
+        
+        if ($feature && is_numeric($feature->value)) {
+            // Check current month usage
+            $currentUsage = \DB::table('usage_records')
+                ->where('subscription_id', $subscription->id)
+                ->where('feature_id', $feature->feature_id)
+                ->whereMonth('billing_date', now()->month)
+                ->sum('quantity');
+            
+            if ($currentUsage >= $feature->value) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "You have reached your monthly limit of {$feature->value} CRUD generations."
+                ], 403);
+            }
+        }
+        
+        // Process CRUD generation...
+        
+        // Record usage
+        \DB::table('usage_records')->insert([
+            'subscription_id' => $subscription->id,
+            'feature_id' => $feature->feature_id,
+            'quantity' => 1,
+            'unit' => 'generation',
+            'billing_date' => now()->toDateString(),
+            'recorded_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Operation successfully'
+        ]);
+    }
+}
+```
+
+## ব্লেড টেমপ্লেটে ব্যবহার
+
+```blade
+@auth
+    @php
+        $subscription = App\Models\Subscription::where('user_id', Auth::id())
+            ->whereIn('status', ['active', 'trialing'])
+            ->with('plan')
+            ->first();
+    @endphp
+    
+    @if($subscription)
+        <div class="alert alert-info">
+            <strong>Current Plan:</strong> {{ $subscription->plan->name }}<br>
+            <strong>Status:</strong> {{ ucfirst($subscription->status) }}<br>
+            @if($subscription->current_period_ends_at)
+                <strong>Expires:</strong> {{ $subscription->current_period_ends_at->format('M d, Y') }}
+                ({{ now()->diffInDays($subscription->current_period_ends_at) }} days left)
+            @endif
+        </div>
+    @else
+        <div class="alert alert-warning">
+            You don't have an active subscription. 
+            <a href="{{ route('website.plans.index') }}">Subscribe now</a>
+        </div>
+    @endif
+@endauth
+```
+
+## মিডলওয়্যারের মূল ফিচারসমূহ
+
+1. **সক্রিয় সাবস্ক্রিপশন চেক** - `status` = 'active' বা 'trialing'
+2. **মেয়াদ বৈধতা চেক** - `current_period_ends_at` > now()
+3. **ফ্রি প্ল্যান সাপোর্ট** - amount = 0 বা 'free' নামের প্ল্যান
+4. **প্ল্যান-নির্দিষ্ট চেক** - নির্দিষ্ট প্ল্যানের জন্য অ্যাক্সেস কন্ট্রোল
+5. **ফিচার-নির্দিষ্ট চেক** - plan_features টেবিলের মাধ্যমে ফিচার চেক
+6. **ইউসেজ ট্র্যাকিং** - usage_records টেবিলের মাধ্যমে ব্যবহার ট্র্যাকিং
+7. **API সাপোর্ট** - JSON রেসপন্স সহ API রিকোয়েস্ট সাপোর্ট
+
+এই মিডলওয়্যার সম্পূর্ণ ডাটাবেজ স্ট্রাকচারের সাথে সামঞ্জস্যপূর্ণ এবং CRUD জেনারেটর বা অন্যান্য ফিচার প্রোটেক্ট করতে ব্যবহার করতে পারবেন।
