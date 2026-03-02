@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\DB;
 trait UsageTrait
 {
     /**
-     * Record usage for a subscription
+     * Record usage for a subscription - will try multiple subscriptions if needed
      */
-    public function recordUsage($subscriptionId, $featureCode, $quantity, $unit = 'count', $metadata = [])
+    public function recordUsage($subscriptionIds, $featureCode, $quantity, $unit = 'count', $metadata = [])
     {
         try {
             DB::beginTransaction();
@@ -26,9 +26,51 @@ trait UsageTrait
                 throw new \Exception("Feature not found: {$featureCode}");
             }
 
-            // Get subscription item
+            // Handle single subscription ID or array
+            $subscriptionIds = is_array($subscriptionIds) ? $subscriptionIds : [$subscriptionIds];
+
+            // Get active subscriptions in order of priority
+            $subscriptions = Subscription::with('plan')
+                ->whereIn('id', $subscriptionIds)
+                ->whereIn('status', ['active', 'trialing'])
+                ->orderBy('created_at') // Oldest first, or you can implement custom priority logic
+                ->get();
+
+            if ($subscriptions->isEmpty()) {
+                throw new \Exception("No active subscriptions found");
+            }
+
+            $usageRecord = null;
+            $usedSubscription = null;
+            $canUseResult = null;
+
+            // Try each subscription until we find one that can accommodate the usage
+            foreach ($subscriptions as $subscription) {
+                $canUseResult = $this->checkUsageLimit($subscription->id, $featureCode, $quantity);
+
+                if ($canUseResult['allowed']) {
+                    $usedSubscription = $subscription;
+                    break;
+                }
+            }
+
+            // If no subscription can accommodate the usage
+            if (!$usedSubscription) {
+                DB::rollBack();
+
+                // Get the best available result for feedback
+                $bestResult = $this->getBestAvailableLimit($subscriptions, $featureCode);
+
+                return [
+                    'success' => false,
+                    'message' => 'No subscription with sufficient limits available',
+                    'data' => $bestResult,
+                ];
+            }
+
+            // Get subscription item for the used subscription
             $subscriptionItem = DB::table('subscription_items')
-                ->where('subscription_id', $subscriptionId)
+                ->where('subscription_id', $usedSubscription->id)
                 ->where('feature_id', $feature->id)
                 ->first();
 
@@ -36,22 +78,9 @@ trait UsageTrait
                 throw new \Exception("Subscription item not found for feature: {$featureCode}");
             }
 
-            // Check if within limits
-            $canUse = $this->checkUsageLimit($subscriptionId, $featureCode, $quantity);
-
-            if (! $canUse['allowed']) {
-                DB::rollBack();
-
-                return [
-                    'success' => false,
-                    'message' => $canUse['message'],
-                    'data' => $canUse,
-                ];
-            }
-
             // Create usage record
             $usageRecord = UsageRecord::create([
-                'subscription_id' => $subscriptionId,
+                'subscription_id' => $usedSubscription->id,
                 'subscription_item_id' => $subscriptionItem->id,
                 'feature_id' => $feature->id,
                 'quantity' => $quantity,
@@ -63,20 +92,21 @@ trait UsageTrait
             ]);
 
             // Update metered usage aggregates
-            $this->updateMeteredAggregates($subscriptionId, $feature->id, $quantity);
+            $this->updateMeteredAggregates($usedSubscription->id, $feature->id, $quantity);
 
             // Update rate limits
-            $this->updateRateLimit($subscriptionId, $feature->id, $quantity);
+            $this->updateRateLimit($usedSubscription->id, $feature->id, $quantity);
 
             // Log subscription event
             DB::table('subscription_events')->insert([
-                'subscription_id' => $subscriptionId,
+                'subscription_id' => $usedSubscription->id,
                 'type' => 'usage_recorded',
                 'data' => json_encode([
                     'feature' => $featureCode,
                     'quantity' => $quantity,
                     'unit' => $unit,
                     'recorded_at' => now()->toDateTimeString(),
+                    'alternative_subscriptions_tried' => $subscriptions->count() - 1,
                 ]),
                 'occurred_at' => now(),
                 'created_at' => now(),
@@ -86,12 +116,13 @@ trait UsageTrait
             DB::commit();
 
             // Get updated usage summary
-            $summary = $this->getUsageSummary($subscriptionId, $featureCode);
+            $summary = $this->getUsageSummary($usedSubscription->id, $featureCode);
 
             return [
                 'success' => true,
                 'message' => 'Usage recorded successfully',
                 'data' => [
+                    'subscription_id' => $usedSubscription->id,
                     'usage_record_id' => $usageRecord->id,
                     'current_usage' => $summary['current_usage'],
                     'limit' => $summary['limit'],
@@ -103,7 +134,7 @@ trait UsageTrait
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Usage recording failed: '.$e->getMessage(), [
-                'subscription_id' => $subscriptionId,
+                'subscription_ids' => $subscriptionIds,
                 'feature' => $featureCode,
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -116,7 +147,41 @@ trait UsageTrait
     }
 
     /**
-     * Check if usage is within limits
+     * Get the best available limit across all subscriptions
+     */
+    protected function getBestAvailableLimit($subscriptions, $featureCode)
+    {
+        $bestResult = null;
+        $bestRemaining = -1;
+
+        foreach ($subscriptions as $subscription) {
+            $result = $this->checkUsageLimit($subscription->id, $featureCode, 0);
+
+            if ($result['allowed'] && isset($result['remaining'])) {
+                $remaining = is_numeric($result['remaining']) ? $result['remaining'] : PHP_INT_MAX;
+
+                if ($remaining > $bestRemaining) {
+                    $bestRemaining = $remaining;
+                    $bestResult = [
+                        'subscription_id' => $subscription->id,
+                        'subscription_status' => $subscription->status,
+                        'plan_name' => $subscription->plan->name ?? 'Unknown',
+                        'limit' => $result['limit'] ?? 'unknown',
+                        'current' => $result['current'] ?? 0,
+                        'remaining' => $result['remaining'] ?? 0,
+                    ];
+                }
+            }
+        }
+
+        return [
+            'best_available' => $bestResult,
+            'message' => 'Consider upgrading your plan or adding more subscriptions',
+        ];
+    }
+
+    /**
+     * Check if usage is within limits for a specific subscription
      */
     public function checkUsageLimit($subscriptionId, $featureCode, $quantity = 1)
     {
@@ -129,7 +194,14 @@ trait UsageTrait
             ];
         }
 
-        // dd($featureCode);
+        // Check if subscription is active or trialing
+        if (!in_array($subscription->status, ['active', 'trialing'])) {
+            return [
+                'allowed' => false,
+                'message' => "Subscription is {$subscription->status}, not active",
+                'subscription_status' => $subscription->status,
+            ];
+        }
 
         // Get feature
         $feature = DB::table('features')->where('code', $featureCode)->first();
@@ -170,6 +242,7 @@ trait UsageTrait
                 'message' => 'Unlimited usage',
                 'limit' => 'unlimited',
                 'current' => 0,
+                'remaining' => 'unlimited',
             ];
         }
 
@@ -184,7 +257,7 @@ trait UsageTrait
             if (($currentUsage + $quantity) > $limit) {
                 return [
                     'allowed' => false,
-                    'message' => "You have reached your monthly limit of {$limit} {$featureCode}",
+                    'message' => "You have reached your limit of {$limit} {$featureCode}",
                     'limit' => $limit,
                     'current' => $currentUsage,
                     'attempted' => $currentUsage + $quantity,
@@ -380,42 +453,61 @@ trait UsageTrait
     }
 
     /**
-     * Get all usage summaries for a subscription
+     * Get all usage summaries for all active subscriptions of a user
      */
-    public function getAllUsageSummaries($subscriptionId)
+    public function getAllUsageSummaries($userId = null, $subscriptionId = null)
     {
-        $subscription = Subscription::with('plan')->find($subscriptionId);
-        if (! $subscription) {
+        if ($subscriptionId) {
+            $subscriptions = Subscription::with('plan')->where('id', $subscriptionId)->get();
+        } elseif ($userId) {
+            $subscriptions = Subscription::with('plan')
+                ->where('user_id', $userId)
+                ->whereIn('status', ['active', 'trialing'])
+                ->get();
+        } else {
             return [];
         }
 
-        $planFeatures = DB::table('plan_features')
-            ->join('features', 'plan_features.feature_id', '=', 'features.id')
-            ->where('plan_features.plan_id', $subscription->plan_id)
-            ->select('features.*', 'plan_features.value as limit_value')
-            ->get();
-
-        $summaries = [];
-
-        foreach ($planFeatures as $feature) {
-            $currentUsage = $this->getCurrentPeriodUsage($subscriptionId, $feature->id);
-
-            $summaries[] = [
-                'feature_code' => $feature->code,
-                'feature_name' => $feature->name,
-                'current_usage' => $currentUsage,
-                'limit' => $feature->limit_value,
-                'is_unlimited' => $feature->limit_value === 'unlimited',
-                'percentage' => $feature->limit_value !== 'unlimited' && is_numeric($feature->limit_value)
-                    ? round(($currentUsage / max(1, (float) $feature->limit_value)) * 100, 2)
-                    : 0,
-                'remaining' => $feature->limit_value === 'unlimited'
-                    ? 'unlimited'
-                    : (is_numeric($feature->limit_value) ? max(0, (float) $feature->limit_value - $currentUsage) : 0),
-            ];
+        if ($subscriptions->isEmpty()) {
+            return [];
         }
 
-        return $summaries;
+        $allSummaries = [];
+
+        foreach ($subscriptions as $subscription) {
+            $planFeatures = DB::table('plan_features')
+                ->join('features', 'plan_features.feature_id', '=', 'features.id')
+                ->where('plan_features.plan_id', $subscription->plan_id)
+                ->select('features.*', 'plan_features.value as limit_value')
+                ->get();
+
+            $summaries = [];
+
+            foreach ($planFeatures as $feature) {
+                $currentUsage = $this->getCurrentPeriodUsage($subscription->id, $feature->id);
+
+                $summaries[] = [
+                    'subscription_id' => $subscription->id,
+                    'subscription_status' => $subscription->status,
+                    'plan_name' => $subscription->plan->name ?? 'Unknown',
+                    'feature_code' => $feature->code,
+                    'feature_name' => $feature->name,
+                    'current_usage' => $currentUsage,
+                    'limit' => $feature->limit_value,
+                    'is_unlimited' => $feature->limit_value === 'unlimited',
+                    'percentage' => $feature->limit_value !== 'unlimited' && is_numeric($feature->limit_value)
+                        ? round(($currentUsage / max(1, (float) $feature->limit_value)) * 100, 2)
+                        : 0,
+                    'remaining' => $feature->limit_value === 'unlimited'
+                        ? 'unlimited'
+                        : (is_numeric($feature->limit_value) ? max(0, (float) $feature->limit_value - $currentUsage) : 0),
+                ];
+            }
+
+            $allSummaries = array_merge($allSummaries, $summaries);
+        }
+
+        return $allSummaries;
     }
 
     /**

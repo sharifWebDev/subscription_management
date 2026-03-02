@@ -199,6 +199,10 @@
                 </div>
 
                 <div class="list-group shadow-sm">
+                    <a href="{{ route('website.dashboard.index') }}"
+                       class="list-group-item list-group-item-action">
+                        <i class="fas fa-tags me-2"></i>Dashboard
+                    </a>
                     <a href="{{ route('website.dashboard.subscriptions') }}"
                        class="list-group-item list-group-item-action">
                         <i class="fas fa-tags me-2"></i>My Subscriptions

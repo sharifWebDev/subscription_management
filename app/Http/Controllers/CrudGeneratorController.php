@@ -9,31 +9,27 @@ use Illuminate\Support\Facades\Auth;
 
 class CrudGeneratorController extends Controller
 {
-    protected $usageService;
-
-    public function __construct(UsageService $usageService)
+    public function __construct(protected UsageService $usageService)
     {
-        $this->usageService = $usageService;
     }
 
     /**
      * Show CRUD generator form
      */
-    public function create()
+    public function create(Request $request)
     {
-        $user = Auth::user();
 
-        // Get usage summary for CRUD generation
-        $subscription = Subscription::where('user_id', $user->id)
-            ->whereIn('status', ['active', 'trialing'])
-            ->first();
+        $usageData = $this->usageService->getCrudGenerationSummary($this->userId());
 
-        $usageSummary = null;
-        if ($subscription) {
-            $usageSummary = $this->usageService->getCrudGenerationSummary($subscription->id);
+        // check ajax request
+        if ($request->wantsJson()) {
+            return response()->json([
+            'success' => true,
+            'data' => $usageData
+        ]);
         }
 
-        return view('crud-generator.create', compact('usageSummary'));
+        return view('crud-generator.create', compact('usageData'));
     }
 
     /**
@@ -41,18 +37,6 @@ class CrudGeneratorController extends Controller
      */
     public function generate(Request $request)
     {
-        $user = Auth::user();
-
-        $subscription = Subscription::where('user_id', $user->id)
-            ->whereIn('status', ['active', 'trialing'])
-            ->first();
-
-        if (! $subscription) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No active subscription found',
-            ], 403);
-        }
 
         // Validate request
         $request->validate([
@@ -65,7 +49,7 @@ class CrudGeneratorController extends Controller
         try {
             // Record the usage
             $usageResult = $this->usageService->recordCrudGeneration(
-                $subscription->id,
+                $this->userId(),
                 [
                     'table_name' => $request->table_name,
                     'model_name' => $request->model_name,
@@ -106,9 +90,8 @@ class CrudGeneratorController extends Controller
      */
     public function usageStats()
     {
-        $user = Auth::user();
 
-        $stats = $this->usageService->getUsageStatistics($user->id);
+        $stats = $this->usageService->getUsageStatistics($this->userId());
 
         return response()->json([
             'success' => true,
@@ -121,24 +104,17 @@ class CrudGeneratorController extends Controller
      */
     public function usageForecast()
     {
-        $user = Auth::user();
 
-        $subscription = Subscription::where('user_id', $user->id)
-            ->whereIn('status', ['active', 'trialing'])
-            ->first();
-
-        if (! $subscription) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No active subscription found',
-            ], 404);
-        }
-
-        $forecast = $this->usageService->getUsageForecast($subscription->id);
+        $forecast = $this->usageService->getUsageForecast($this->userId());
 
         return response()->json([
             'success' => true,
             'data' => $forecast,
         ]);
+    }
+
+    protected function userId()
+    {
+        return Auth::user()->id;
     }
 }

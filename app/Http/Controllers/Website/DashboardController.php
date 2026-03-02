@@ -9,6 +9,13 @@ class DashboardController extends Controller
     /**
      * Show subscriptions page
      */
+    public function dashboard()
+    {
+        return view('website.dashboard.index');
+    }
+  /**
+     * Show subscriptions page
+     */
     public function subscriptions()
     {
         return view('website.dashboard.subscriptions');

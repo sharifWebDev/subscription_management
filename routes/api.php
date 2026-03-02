@@ -1,5 +1,6 @@
 <?php
 
+use \App\Http\Controllers\CrudGeneratorController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\DiscountController;
 use App\Http\Controllers\Api\V1\FeatureController;
@@ -29,6 +30,7 @@ use App\Http\Controllers\Api\V1\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
+
 
 Route::middleware('auth:sanctum')->get('/v1/user', function (Request $request) {
     return '$request->user()';
@@ -400,3 +402,20 @@ Route::get('/health', function () {
 // Route::middleware(['auth:sanctum', 'subscription'])->prefix('v1')->group(function () {
 //     Route::post('/crud/generate', [CrudGeneratorController::class, 'generate']);
 // });
+
+// Web routes with middleware
+Route::middleware(['auth:sanctum'])
+->prefix('v1')
+->group(function () {
+
+    // Check subscription + usage for CRUD generation
+    Route::middleware(['subscription', 'usage:crud_generation,1'])->group(function () {
+        Route::get('/crud-generator', [\App\Http\Controllers\CrudGeneratorController::class, 'create'])->name('crud.generator.create');
+        Route::post('/crud-generator/generate', [\App\Http\Controllers\CrudGeneratorController::class, 'generate'])->name('crud.generator.generate');
+    });
+
+    // Usage statistics
+    Route::get('/usage-stats', [CrudGeneratorController::class, 'usageStats'])->name('usage.stats');
+    Route::get('/usage-forecast', [\App\Http\Controllers\CrudGeneratorController::class, 'usageForecast'])->name('usage.forecast');
+});
+

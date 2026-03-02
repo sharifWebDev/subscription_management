@@ -248,7 +248,7 @@
                 let html = '';
 
                 invoices.forEach(invoice => {
-                    const date = new Date(invoice.issue_date).toLocaleDateString('en-US', {
+                    const date = new Date(invoice?.issue_date).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric'
@@ -260,10 +260,10 @@
                         'draft': 'secondary',
                         'void': 'dark',
                         'uncollectible': 'danger'
-                    } [invoice.status] || 'secondary';
+                    } [invoice?.status] || 'secondary';
 
                     // Parse line items
-                    const lineItems = invoice.line_items || [];
+                    const lineItems = invoice?.line_items || [];
                     const description = lineItems.length > 0 ?
                         lineItems[0].description :
                         'Subscription Invoice';
@@ -271,7 +271,7 @@
                     html += `
                     <tr>
                         <td>
-                            <strong>${invoice.number}</strong>
+                            <strong>${invoice?.number}</strong>
                         </td>
                         <td>${date}</td>
                         <td>
@@ -279,17 +279,17 @@
                             ${lineItems.length > 1 ? `<br><small class="text-muted">+${lineItems.length - 1} more items</small>` : ''}
                         </td>
                         <td>
-                            <strong>${formatMoney(invoice.total)}</strong>
+                            <strong>${formatMoney(invoice?.total)}</strong>
                             <br>
-                            <small class="text-muted">${invoice.currency}</small>
+                            <small class="text-muted">${invoice?.currency}</small>
                         </td>
-                        <td><span class="badge bg-${statusClass}">${invoice.status}</span></td>
+                        <td><span class="badge bg-${statusClass}">${invoice?.status}</span></td>
                         <td>
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-primary" onclick="viewInvoice(${invoice.id})" title="View">
+                                <button class="btn btn-outline-primary" onclick="viewInvoice(${invoice?.id})" title="View">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <button class="btn btn-outline-secondary" onclick="downloadInvoice(${invoice.id})" title="Download PDF">
+                                <button class="btn btn-outline-secondary" onclick="downloadInvoice(${invoice?.id})" title="Download PDF">
                                     <i class="fas fa-download"></i>
                                 </button>
                             </div>
@@ -317,16 +317,17 @@
             window.viewInvoice = function(id) {
                 axios.get(`/invoices/${id}`)
                     .then(response => {
-                        const invoice = response.data.data;
+                        const invoice = response?.data?.data;
 
-                        const issueDate = new Date(invoice.issue_date).toLocaleDateString('en-US', {
+
+                        const issueDate = new Date(invoice?.issue_date).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
                         });
 
-                        const dueDate = invoice.due_date ?
-                            new Date(invoice.due_date).toLocaleDateString('en-US', {
+                        const dueDate = invoice?.due_date ?
+                            new Date(invoice?.due_date).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'
@@ -334,7 +335,7 @@
                             'N/A';
 
                         // Parse line items
-                        const lineItems = invoice.line_items || [];
+                        const lineItems = invoice?.line_items || [];
                         let itemsHtml = '';
 
                         lineItems.forEach(item => {
@@ -349,31 +350,31 @@
                         });
 
                         // Parse tax rates
-                        const taxRates = invoice.tax_rates || [];
+                        const taxRates = invoice?.tax_rates || [];
                         let taxHtml = '';
 
-                        taxRates.forEach(tax => {
-                            taxHtml += `
+                        // taxRates.forEach(tax => {
+                            taxHtml = `
                             <tr>
-                                <td>${tax.name || 'Tax'}</td>
-                                <td class="text-end">${tax.rate}%</td>
-                                <td class="text-end">${formatMoney(tax.amount || 0)}</td>
+                                <td>${taxRates.name || 'Tax'}</td>
+                                <td class="text-end">${taxRates.rate}%</td>
+                                <td class="text-end">${formatMoney(taxRates.amount || 0)}</td>
                             </tr>
                         `;
-                        });
+                        // });
 
                         // Parse discounts
-                        const discounts = invoice.discounts || [];
+                        const discounts = invoice?.discounts || [];
                         let discountHtml = '';
 
-                        discounts.forEach(discount => {
-                            discountHtml += `
+                        // discounts.forEach(discount => {
+                            discountHtml = `
                             <tr>
-                                <td>${discount.name || 'Discount'}</td>
-                                <td class="text-end">-${formatMoney(discount.amount || 0)}</td>
+                                <td>${discounts.name || 'Discount'}</td>
+                                <td class="text-end">-${formatMoney(discounts.amount || 0)}</td>
                             </tr>
                         `;
-                        });
+                        // });
 
                         let html = `
                         <div class="row mb-4">
@@ -383,10 +384,10 @@
                                 <p class="mb-1">{{ auth()->user()->email }}</p>
                             </div>
                             <div class="col-6 text-end">
-                                <h6 class="fw-bold">Invoice #${invoice.number}</h6>
+                                <h6 class="fw-bold">Invoice #${invoice?.number}</h6>
                                 <p class="mb-1">Issue Date: ${issueDate}</p>
                                 <p class="mb-1">Due Date: ${dueDate}</p>
-                                <p class="mb-1">Status: <span class="badge bg-${invoice.status === 'paid' ? 'success' : 'warning'}">${invoice.status}</span></p>
+                                <p class="mb-1">Status: <span class="badge bg-${invoice?.status === 'paid' ? 'success' : 'warning'}">${invoice?.status}</span></p>
                             </div>
                         </div>
 
@@ -424,29 +425,29 @@
                                 <table class="table table-sm">
                                     <tr>
                                         <th>Subtotal:</th>
-                                        <td class="text-end">${formatMoney(invoice.subtotal)}</td>
+                                        <td class="text-end">${formatMoney(invoice?.subtotal)}</td>
                                     </tr>
                                     <tr>
                                         <th>Tax:</th>
-                                        <td class="text-end">${formatMoney(invoice.tax)}</td>
+                                        <td class="text-end">${formatMoney(invoice?.tax)}</td>
                                     </tr>
                                     ${discounts.length > 0 ? `
                                             <tr>
                                                 <th>Discount:</th>
-                                                <td class="text-end text-success">-${formatMoney(invoice.discount_amount || 0)}</td>
+                                                <td class="text-end text-success">-${formatMoney(invoice?.discount_amount || 0)}</td>
                                             </tr>
                                         ` : ''}
                                     <tr class="fw-bold">
                                         <th>Total:</th>
-                                        <td class="text-end text-primary">${formatMoney(invoice.total)}</td>
+                                        <td class="text-end text-primary">${formatMoney(invoice?.total)}</td>
                                     </tr>
                                     <tr class="text-success">
                                         <th>Paid:</th>
-                                        <td class="text-end">${formatMoney(invoice.amount_paid || 0)}</td>
+                                        <td class="text-end">${formatMoney(invoice?.amount_paid || 0)}</td>
                                     </tr>
                                     <tr class="text-danger">
                                         <th>Balance Due:</th>
-                                        <td class="text-end">${formatMoney(invoice.amount_due || 0)}</td>
+                                        <td class="text-end">${formatMoney(invoice?.amount_due || 0)}</td>
                                     </tr>
                                 </table>
                             </div>
@@ -457,7 +458,7 @@
 
                         // Set download button
                         $('#downloadInvoiceBtn').off('click').on('click', function() {
-                            downloadInvoice(invoice.id);
+                            downloadInvoice(invoice?.id);
                         });
 
                         $('#invoiceModal').modal('show');
