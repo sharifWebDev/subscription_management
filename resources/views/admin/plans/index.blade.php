@@ -361,7 +361,7 @@
                     {
                         data: 'is_active',
                         render: function(data) {
-                            return data ? '<span class="badge badge-success">Active</span>' :
+                            return data ? '<span class="badge badge-success bg-success p-2">Active</span>' :
                                 '<span class="badge badge-danger">Inactive</span>';
                         }
                     },
@@ -586,7 +586,7 @@
                                         </tr>
                                         <tr>
                                             <th>Status:</th>
-                                            <td>${plan.is_active ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'}</td>
+                                            <td>${plan.is_active ? '<span class="badge badge-success bg-success p-2">Active</span>' : '<span class="badge badge-danger">Inactive</span>'}</td>
                                         </tr>
                                         <tr>
                                             <th>Visible:</th>
@@ -730,11 +730,11 @@
                                                 <tbody>
                         `;
 
-                        if (plan.discounts && plan.discounts.length) {
-                            plan.discounts.forEach(d => {
+                        if (plan.discounts.data && plan.discounts.data.length) {
+                            plan.discounts.data.forEach(d => {
                                 html += `
                                     <tr>
-                                        <td><span class="badge badge-info">${d.code}</span></td>
+                                        <td><span class="badge badge-success bg-success p-2">${d.code}</span></td>
                                         <td>${d.name}</td>
                                         <td>${d.type}</td>
                                         <td>${d.amount}${d.type === 'percentage' ? '%' : ' ' + (d.currency || '')}</td>
@@ -1024,7 +1024,7 @@
                                         <label class="custom-control-label" for="discount_${discount.id}"></label>
                                     </div>
                                 </td>
-                                <td><span class="badge badge-info">${discount.code}</span></td>
+                                <td><span class="badge badge-success bg-success p-2">${discount.code}</span></td>
                                 <td>${discount.name}</td>
                                 <td><span class="badge badge-secondary">${discount.type}</span></td>
                                 <td>${discount.amount}${discount.type === 'percentage' ? '%' : ' ' + (discount.currency || '')}</td>
@@ -1081,16 +1081,16 @@
                 }
 
                 // Collect features
-                $('#featuresContainer tr:visible').each(function() {
+                $('#featuresContainer tr').each(function() {
                     let row = $(this);
                     let featureId = row.find('select[name*="[feature_id]"]').val();
-                    let featureValue = row.find('input[name*="[value]"]').val();
 
-                    if (featureId && featureValue) {
+                    // Only collect if a feature is selected
+                    if (featureId) {
                         let feature = {
                             feature_id: featureId,
-                            value: featureValue,
-                            config: row.find('input[name*="[config]"]').val(),
+                            value: row.find('input[name*="[value]"]').val() || '',
+                            config: row.find('input[name*="[config]"]').val() || '',
                             sort_order: row.find('input[name*="[sort_order]"]').val() || 0
                         };
 
@@ -1174,7 +1174,7 @@
                 // Make request
                 let request;
                 if (id) {
-                    request = axios.put(`/api/v1/plans/${id}`, data);
+                    request = axios.put(`/api/v1/plans/update/${id}`, data);
                 } else {
                     request = axios.post('/api/v1/plans', data);
                 }

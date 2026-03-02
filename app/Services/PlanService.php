@@ -53,6 +53,7 @@ class PlanService
 
         $query->orderBy($sortColumn, $sortDirection);
 
+
         return $length === -1
             ? $query->paginate($query->get()->count())
             : $query->paginate($length);
@@ -252,10 +253,9 @@ class PlanService
         }
 
         // Delete features not in the processed list (but only if we're doing a full sync)
-        // Comment this out if you want to keep features not included in the update
-        // PlanFeature::where('plan_id', $planId)
-        //     ->whereNotIn('id', $processedIds)
-        //     ->delete();
+        PlanFeature::where('plan_id', $planId)
+            ->whereNotIn('id', $processedIds)
+            ->delete();
     }
 
     /**

@@ -41,9 +41,6 @@ class CrudGeneratorController extends Controller
      */
     public function generate(Request $request)
     {
-        // The usage middleware will automatically check if user can generate CRUD
-        // If not allowed, it will return error before reaching here
-
         $user = Auth::user();
 
         $subscription = Subscription::where('user_id', $user->id)
@@ -61,8 +58,9 @@ class CrudGeneratorController extends Controller
         $request->validate([
             'table_name' => 'required|string|max:255',
             'model_name' => 'required|string|max:255',
-            'fields' => 'required|json',
-        ]);
+            'fields' => 'required|string|max:5000',
+            ]);
+
 
         try {
             // Record the usage

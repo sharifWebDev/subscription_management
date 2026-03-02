@@ -181,7 +181,7 @@
     <main>
         <div class="container mt-4">
             <div class="row">
-               @if(!request()->routeIs('website.plans.*') && !request()->routeIs('website.checkout.*'))
+               @if(!request()->routeIs('website.plans.*') && !request()->routeIs('website.checkout.*') && !request()->routeIs('website.plan.*'))
          <!-- Sidebar -->
             <div class="col-lg-3">
                 <div class="card border-0 shadow-sm mb-4">

@@ -37,7 +37,13 @@ class PlanResource extends JsonResource
                 })
             ),
             'discounts' => DiscountResource::collection(
-                $this->whenLoaded('discounts')
+                $this->whenLoaded('discounts', function () {
+                    return $this->discounts->where('is_active', true)
+                        ->filter(function ($discount) {
+                            return ($discount->starts_at === null || $discount->starts_at <= now()) &&
+                                   ($discount->expires_at === null || $discount->expires_at > now());
+                        });
+                })
             ),
             'created_at' => $this->created_at?->toDateString(),
             'updated_at' => $this->updated_at?->toISOString(),
