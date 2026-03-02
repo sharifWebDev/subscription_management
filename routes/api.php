@@ -406,7 +406,7 @@ Route::get('/health', function () {
 Route::middleware(['auth:sanctum'])
     ->prefix('v1')
     ->group(function () {
-
+        
         // Check subscription + usage for CRUD generation
         Route::middleware(['subscription', 'usage:crud_generation,1'])->group(function () {
             Route::get('/crud-generator', [\App\Http\Controllers\CrudGeneratorController::class, 'create'])->name('crud.generator.create');
