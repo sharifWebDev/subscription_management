@@ -150,7 +150,7 @@ class CheckSubscription
                 'total_subscriptions' => $activeSubscriptions->count(),
                 'valid_subscriptions' => $subscriptionStatus['valid_subscriptions'],
                 'has_free_plan' => $hasFreePlan,
-                'subscriptions' => $activeSubscriptions->map(function($sub) {
+                'subscriptions' => $activeSubscriptions->map(function ($sub) {
                     return [
                         'id' => $sub->id,
                         'plan_name' => $sub->plan->name ?? 'Unknown',
@@ -213,6 +213,7 @@ class CheckSubscription
                     'plan_name' => $subscription->plan->name ?? 'Unknown',
                     'expired_at' => $subscription->current_period_ends_at->format('Y-m-d'),
                 ];
+
                 continue;
             }
 
@@ -222,6 +223,7 @@ class CheckSubscription
                     'id' => $subscription->id,
                     'plan_name' => $subscription->plan->name ?? 'Unknown',
                 ];
+
                 continue;
             }
 
@@ -269,21 +271,23 @@ class CheckSubscription
             return "You have {$validCount} active subscription(s)";
         }
 
-        if (!empty($expired) && !empty($pastDue)) {
-            return "Your subscriptions have expired or are past due. Please renew to continue.";
+        if (! empty($expired) && ! empty($pastDue)) {
+            return 'Your subscriptions have expired or are past due. Please renew to continue.';
         }
 
-        if (!empty($expired)) {
+        if (! empty($expired)) {
             $count = count($expired);
-            return "Your subscription" . ($count > 1 ? 's have' : ' has') . " expired. Please renew to continue.";
+
+            return 'Your subscription'.($count > 1 ? 's have' : ' has').' expired. Please renew to continue.';
         }
 
-        if (!empty($pastDue)) {
+        if (! empty($pastDue)) {
             $count = count($pastDue);
-            return "Your subscription payment" . ($count > 1 ? 's are' : ' is') . " past due. Please update payment method.";
+
+            return 'Your subscription payment'.($count > 1 ? 's are' : ' is').' past due. Please update payment method.';
         }
 
-        return "No valid subscriptions found";
+        return 'No valid subscriptions found';
     }
 
     /**
@@ -326,7 +330,7 @@ class CheckSubscription
         $requiredPlan = strtolower($requiredPlan);
 
         foreach ($subscriptions as $subscription) {
-            if (!$subscription->plan) {
+            if (! $subscription->plan) {
                 continue;
             }
 
@@ -357,7 +361,7 @@ class CheckSubscription
             return ['No Plan'];
         }
 
-        return $subscriptions->map(function($sub) {
+        return $subscriptions->map(function ($sub) {
             return $sub->plan->name ?? 'Unknown';
         })->toArray();
     }
@@ -371,6 +375,7 @@ class CheckSubscription
 
         if (strpos($requiredPlan, ',') !== false) {
             [$plan, $feature] = explode(',', $requiredPlan);
+
             return "The '{$feature}' feature requires a {$plan} plan. Your current plan(s): {$currentPlansList}";
         }
 
@@ -387,7 +392,7 @@ class CheckSubscription
         }
 
         foreach ($subscriptions as $subscription) {
-            if (!$subscription->plan) {
+            if (! $subscription->plan) {
                 continue;
             }
 
@@ -414,7 +419,7 @@ class CheckSubscription
         $result = [];
 
         foreach ($subscriptions as $subscription) {
-            if (!$subscription->plan) {
+            if (! $subscription->plan) {
                 continue;
             }
 
@@ -443,7 +448,7 @@ class CheckSubscription
     {
         $feature = \DB::table('features')->where('code', $featureCode)->first();
 
-        if (!$feature) {
+        if (! $feature) {
             return ['used' => 0, 'limit' => 0, 'percentage' => 0];
         }
 
@@ -481,7 +486,7 @@ class CheckSubscription
             'used' => $totalUsage,
             'limit' => $isUnlimited ? 'unlimited' : $totalLimit,
             'is_unlimited' => $isUnlimited,
-            'percentage' => (!$isUnlimited && $totalLimit > 0) ? round(($totalUsage / $totalLimit) * 100, 2) : 0,
+            'percentage' => (! $isUnlimited && $totalLimit > 0) ? round(($totalUsage / $totalLimit) * 100, 2) : 0,
         ];
     }
 }

@@ -30,7 +30,7 @@ Route::prefix('/')->name('website.')->group(function () {
 Route::middleware(['auth'])->prefix('dashboard')
     ->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('website.dashboard.index');
-         Route::get('/subscriptions', [DashboardController::class, 'subscriptions'])->name('website.dashboard.subscriptions');
+        Route::get('/subscriptions', [DashboardController::class, 'subscriptions'])->name('website.dashboard.subscriptions');
         Route::get('/invoices', [DashboardController::class, 'invoices'])->name('website.dashboard.invoices');
         Route::get('/payment-methods', [DashboardController::class, 'paymentMethods'])->name('website.dashboard.payment-methods');
         Route::get('/usage', [DashboardController::class, 'usage'])->name('website.dashboard.usage');
@@ -56,7 +56,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/crud-generator', [\App\Http\Controllers\CrudGeneratorController::class, 'create'])->name('crud.generator.create');
         Route::post('/crud-generator/generate', [\App\Http\Controllers\CrudGeneratorController::class, 'generate'])->name('crud.generator.generate');
     });
- });
+});
 
 // API routes
 Route::middleware(['auth:sanctum', 'subscription', 'usage:crud_generation,1'])

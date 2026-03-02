@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Subscription;
 use App\Services\UsageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CrudGeneratorController extends Controller
 {
-    public function __construct(protected UsageService $usageService)
-    {
-    }
+    public function __construct(protected UsageService $usageService) {}
 
     /**
      * Show CRUD generator form
@@ -24,9 +21,9 @@ class CrudGeneratorController extends Controller
         // check ajax request
         if ($request->wantsJson()) {
             return response()->json([
-            'success' => true,
-            'data' => $usageData
-        ]);
+                'success' => true,
+                'data' => $usageData,
+            ]);
         }
 
         return view('crud-generator.create', compact('usageData'));
@@ -43,8 +40,7 @@ class CrudGeneratorController extends Controller
             'table_name' => 'required|string|max:255',
             'model_name' => 'required|string|max:255',
             'fields' => 'required|string|max:5000',
-            ]);
-
+        ]);
 
         try {
             // Record the usage

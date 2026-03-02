@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Discount;
-use App\Models\Plan;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\SoftDeletes;
 

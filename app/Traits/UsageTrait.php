@@ -37,7 +37,7 @@ trait UsageTrait
                 ->get();
 
             if ($subscriptions->isEmpty()) {
-                throw new \Exception("No active subscriptions found");
+                throw new \Exception('No active subscriptions found');
             }
 
             $usageRecord = null;
@@ -55,7 +55,7 @@ trait UsageTrait
             }
 
             // If no subscription can accommodate the usage
-            if (!$usedSubscription) {
+            if (! $usedSubscription) {
                 DB::rollBack();
 
                 // Get the best available result for feedback
@@ -195,7 +195,7 @@ trait UsageTrait
         }
 
         // Check if subscription is active or trialing
-        if (!in_array($subscription->status, ['active', 'trialing'])) {
+        if (! in_array($subscription->status, ['active', 'trialing'])) {
             return [
                 'allowed' => false,
                 'message' => "Subscription is {$subscription->status}, not active",

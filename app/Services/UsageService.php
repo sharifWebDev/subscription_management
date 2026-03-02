@@ -41,7 +41,6 @@ class UsageService
 
         foreach ($subscriptions as $subscription) {
             $result = $this->checkUsageLimit($subscription->id, $featureCode, $quantity);
- 
 
             $results[] = [
                 'subscription_id' => $subscription->id,
@@ -254,7 +253,7 @@ class UsageService
         $aggregatedByFeature = [];
         foreach ($allSummaries as $summary) {
             $featureCode = $summary['feature_code'];
-            if (!isset($aggregatedByFeature[$featureCode])) {
+            if (! isset($aggregatedByFeature[$featureCode])) {
                 $aggregatedByFeature[$featureCode] = [
                     'feature_name' => $summary['feature_name'],
                     'total_usage' => 0,
@@ -316,7 +315,7 @@ class UsageService
         return [
             'has_subscription' => true,
             'total_subscriptions' => $subscriptions->count(),
-            'subscriptions' => $subscriptions->map(function($sub) {
+            'subscriptions' => $subscriptions->map(function ($sub) {
                 return [
                     'id' => $sub->id,
                     'plan_name' => $sub->plan->name ?? 'Unknown',
@@ -362,11 +361,11 @@ class UsageService
             $results[] = $result;
         }
 
-        $successCount = count(array_filter($results, fn($r) => $r['success'] ?? false));
+        $successCount = count(array_filter($results, fn ($r) => $r['success'] ?? false));
 
         return [
             'success' => $successCount > 0,
-            'message' => "Processed {$successCount} of " . count($results) . " usage records",
+            'message' => "Processed {$successCount} of ".count($results).' usage records',
             'results' => $results,
         ];
     }
@@ -426,7 +425,7 @@ class UsageService
         }
 
         // Group forecasts by feature across subscriptions
-        $groupedForecasts = collect($forecasts)->groupBy('feature_code')->map(function($items) {
+        $groupedForecasts = collect($forecasts)->groupBy('feature_code')->map(function ($items) {
             return [
                 'feature_name' => $items->first()['feature_name'],
                 'total_current_usage' => $items->sum('current_usage'),

@@ -53,7 +53,6 @@ class PlanService
 
         $query->orderBy($sortColumn, $sortDirection);
 
-
         return $length === -1
             ? $query->paginate($query->get()->count())
             : $query->paginate($length);
