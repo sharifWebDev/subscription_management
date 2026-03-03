@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\DiscountController;
 use App\Http\Controllers\Api\V1\FeatureController;
@@ -31,8 +32,28 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Http\Controllers\AuthenticatedSessionController;
 
+
 Route::middleware('auth:sanctum')->get('/v1/user', function (Request $request) {
     return '$request->user()';
+});
+
+// Public routes
+Route::post('/v1/login', [AuthController::class, 'login'])->name('login');
+// Route::prefix('forgot-password')->controller(ForgotPasswordController::class)->group(function () {
+//     Route::post('/request', 'requestOtp');
+//     Route::post('/verify', 'verifyOtp');
+//     Route::post('/reset', 'resetPassword');
+// });
+
+// Protected routes
+Route::middleware('auth:sanctum')
+->prefix('/v1')
+->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/user', [AuthController::class, 'user']);
+    Route::put('/update-profile', [AuthController::class, 'updateProfile']);
+    Route::put('/update-profile', [AuthController::class, 'updateProfile']);
+
 });
 
 Route::middleware('auth:sanctum', 'verified')
@@ -406,7 +427,7 @@ Route::get('/health', function () {
 Route::middleware(['auth:sanctum'])
     ->prefix('v1')
     ->group(function () {
-        
+
         // Check subscription + usage for CRUD generation
         Route::middleware(['subscription', 'usage:crud_generation,1'])->group(function () {
             Route::get('/crud-generator', [\App\Http\Controllers\CrudGeneratorController::class, 'create'])->name('crud.generator.create');
