@@ -193,63 +193,64 @@ class InvoiceController extends Controller
     /**
      * Get user invoices
      */
-    public function index(Request $request): JsonResponse
-    {
-        try {
-            $user = Auth::user();
+ public function index(Request $request): JsonResponse
+{
+    try {
+        $user = Auth::user();
 
-            $query = Invoice::where('user_id', $user->id)
-                ->with(['subscription.plan'])
-                ->orderBy('issue_date', 'desc');
+        $query = Invoice::where('user_id', $user->id)
+            ->with(['subscription.plan']);
 
-            // Apply filters
-            if ($request->has('status')) {
-                $query->where('status', $request->status);
-            }
-
-            if ($request->has('from_date')) {
-                $query->where('issue_date', '>=', $request->from_date);
-            }
-
-            if ($request->has('to_date')) {
-                $query->where('issue_date', '<=', $request->to_date);
-            }
-
-            if ($request->has('subscription_id')) {
-                $query->where('subscription_id', $request->subscription_id);
-            }
-
-            $invoices = $query->paginate($request->get('per_page', 15));
-
-            // Calculate totals
-            $totals = [
-                'total_paid' => Invoice::where('user_id', $user->id)
-                    ->where('status', 'paid')
-                    ->sum('total'),
-                'total_due' => Invoice::where('user_id', $user->id)
-                    ->where('status', 'open')
-                    ->sum('total'),
-                'total_count' => Invoice::where('user_id', $user->id)->count(),
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => InvoiceResource::collection($invoices),
-                'meta' => [
-                    'current_page' => $invoices->currentPage(),
-                    'per_page' => $invoices->perPage(),
-                    'total' => $invoices->total(),
-                    'totals' => $totals,
-                ],
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch invoices',
-            ], 500);
+        if ($request->has('status') && !empty($request->status)) {
+            $query->where('status', $request->status);
         }
+
+        if ($request->has('from_date') && !empty($request->from_date)) {
+            $query->where('issue_date', '>=', $request->from_date);
+        }
+
+        if ($request->has('to_date') && !empty($request->to_date)) {
+            $query->where('issue_date', '<=', $request->to_date);
+        }
+
+        if ($request->has('subscription_id') && !empty($request->subscription_id)) {
+            $query->where('subscription_id', $request->subscription_id);
+        }
+
+        if ($request->has('sort_by') && !empty($request->sort_by)) {
+            if (is_array($request->sort_by)) {
+                $sortColumn = $request->sort_by['column'] ?? 'issue_date';
+                $sortDirection = $request->sort_by['direction'] ?? 'desc';
+            } else {
+                $sortColumn = $request->sort_by;
+                $sortDirection = $request->get('sort_direction', 'desc');
+            }
+
+            $allowedSortColumns = ['id', 'number', 'issue_date', 'due_date', 'total', 'status', 'created_at'];
+            if (in_array($sortColumn, $allowedSortColumns)) {
+                $query->orderBy($sortColumn, $sortDirection === 'asc' ? 'asc' : 'desc');
+            } else {
+                $query->orderBy('issue_date', 'desc');
+            }
+        } else {
+            $query->orderBy('issue_date', 'desc');
+        }
+
+        $invoices = $query->paginate($request->get('per_page', 15));
+
+        return success('Invoices retrieved successfully', InvoiceResource::collection($invoices), 200);
+
+    } catch (\Exception $e) {
+        \Log::error('Failed to fetch invoices: '.$e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch invoices',
+        ], 500);
     }
+}
 
     /**
      * Get single invoice
@@ -327,10 +328,10 @@ class InvoiceController extends Controller
         try {
             $invoice = Invoice::where('user_id', Auth::id())->findOrFail($id);
 
-            // Generate and return PDF download
             return $this->invoiceService->downloadPdf($invoice->id);
 
         } catch (Exception $e) {
+            \Log::error('Failed to download invoice: '.$e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to download invoice'.' '.$e->getMessage(),

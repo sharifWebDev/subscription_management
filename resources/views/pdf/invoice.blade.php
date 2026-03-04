@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invoice {{ $invoice->number }}</title>
+    <title>Invoice {{ $invoice->number ?? $invoice->id }}</title>
     <style>
         body {
-            font-family: 'dejavusans', sans-serif;
+            font-family: 'dejavu sans', 'sans-serif';
             font-size: 12px;
             line-height: 1.6;
             color: #333;
@@ -17,9 +17,8 @@
 
         .invoice-box {
             max-width: 800px;
-            margin: auto;
-            padding: 20px;
-            /* border: 1px solid #eee; */
+            margin: 0 auto;
+            padding: 30px;
             background-color: #fff;
         }
 
@@ -28,21 +27,21 @@
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 2px solid #0d6efd;
+        }
+
+        .header table {
+            width: 100%;
             border-collapse: collapse;
         }
 
-        .header td {
+        .header-left {
+            text-align: left;
             vertical-align: top;
         }
 
-        .header-left {
-            width: 50%;
-            text-align: left;
-        }
-
         .header-right {
-            width: 50%;
             text-align: right;
+            vertical-align: top;
         }
 
         .logo {
@@ -51,7 +50,6 @@
         }
 
         .company-details {
-            text-align: right;
             color: #666;
             font-size: 11px;
         }
@@ -68,6 +66,7 @@
             font-weight: bold;
             color: #0d6efd;
             margin-bottom: 20px;
+            text-align: center;
         }
 
         .invoice-info {
@@ -93,18 +92,19 @@
             text-align: right;
         }
 
-        .invoice-info-right {
-            text-align: right;
+        .info-row {
+            margin-bottom: 8px;
         }
 
         .info-label {
             font-weight: bold;
             color: #666;
-            margin-bottom: 3px;
+            display: inline-block;
+            min-width: 100px;
         }
 
         .info-value {
-            margin-bottom: 10px;
+            display: inline-block;
         }
 
         .status-badge {
@@ -131,6 +131,16 @@
             color: white;
         }
 
+        .status-void {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .status-uncollectible {
+            background-color: #343a40;
+            color: white;
+        }
+
         .table {
             width: 100%;
             border-collapse: collapse;
@@ -140,13 +150,13 @@
         .table th {
             background-color: #0d6efd;
             color: white;
-            padding: 10px;
+            padding: 12px;
             text-align: left;
             font-size: 12px;
         }
 
         .table td {
-            padding: 10px;
+            padding: 10px 12px;
             border-bottom: 1px solid #ddd;
         }
 
@@ -178,6 +188,7 @@
             width: 100%;
             max-width: 400px;
             margin-left: auto;
+            border-collapse: collapse;
         }
 
         .totals td {
@@ -186,6 +197,7 @@
 
         .totals .total-label {
             font-weight: bold;
+            text-align: left;
         }
 
         .totals .total-amount {
@@ -232,23 +244,25 @@
         <table class="header">
             <tr>
                 <td class="header-left">
-                    @if (file_exists($company['logo']))
+                    @if (!empty($company['logo']) && file_exists($company['logo']))
                         <img src="{{ $company['logo'] }}" alt="{{ $company['name'] }}" class="logo">
                     @else
-                        <h2>{{ $company['name'] }}</h2>
+                        <h2 style="color: #0d6efd; margin:0;">{{ $company['name'] }}</h2>
                     @endif
                 </td>
 
                 <td class="header-right">
                     <div class="company-name">{{ $company['name'] }}</div>
-                    <div>{{ $company['address'] }}</div>
-                    <div>{{ $company['city'] }}, {{ $company['state'] }} {{ $company['zip'] }}</div>
-                    <div>{{ $company['country'] }}</div>
-                    <div>Phone: {{ $company['phone'] }}</div>
-                    <div>Email: {{ $company['email'] }}</div>
-                    @if ($company['tax_id'])
-                        <div>Tax ID: {{ $company['tax_id'] }}</div>
-                    @endif
+                    <div class="company-details">
+                        <div>{{ $company['address'] }}</div>
+                        <div>{{ $company['city'] }}, {{ $company['state'] }} {{ $company['zip'] }}</div>
+                        <div>{{ $company['country'] }}</div>
+                        <div>Phone: {{ $company['phone'] }}</div>
+                        <div>Email: {{ $company['email'] }}</div>
+                        @if (!empty($company['tax_id']))
+                            <div>Tax ID: {{ $company['tax_id'] }}</div>
+                        @endif
+                    </div>
                 </td>
             </tr>
         </table>
@@ -260,58 +274,68 @@
             <tr>
                 <td class="invoice-info-left">
                     <div class="info-label">Bill To:</div>
-                    <div class="info-value">
-                        <strong>{{ $invoice->user->name }}</strong><br>
-                        {{ $invoice->user->email }}<br>
-                        @if ($invoice->user->phone)
-                            {{ $invoice->user->phone }}<br>
-                        @endif
-                        @if ($invoice->user->billing_address)
-                            {{ $invoice->user->billing_address->line1 ?? '' }}<br>
-                            {{ $invoice->user->billing_address->line2 ?? '' }}<br>
-                            {{ $invoice->user->billing_address->city ?? '' }},
-                            {{ $invoice->user->billing_address->state ?? '' }}
-                            {{ $invoice->user->billing_address->postal_code ?? '' }}<br>
-                            {{ $invoice->user->billing_address->country ?? '' }}
+                    <div class="info-value" style="margin-top: 5px;">
+                        <strong>{{ $user->name ?? $invoice->user->name ?? 'N/A' }}</strong><br>
+                        {{ $user->email ?? $invoice->user->email ?? 'N/A' }}<br>
+
+                        @if(!empty($billingAddress))
+                            @if(!empty($billingAddress['line1']))
+                                {{ $billingAddress['line1'] }}<br>
+                            @endif
+                            @if(!empty($billingAddress['line2']))
+                                {{ $billingAddress['line2'] }}<br>
+                            @endif
+                            @if(!empty($billingAddress['city']) || !empty($billingAddress['state']))
+                                {{ $billingAddress['city'] ?? '' }} {{ $billingAddress['state'] ?? '' }} {{ $billingAddress['postal_code'] ?? '' }}<br>
+                            @endif
+                            @if(!empty($billingAddress['country']))
+                                {{ $billingAddress['country'] }}<br>
+                            @endif
+                        @elseif($invoice->user->billing_address)
+                            @php $addr = $invoice->user->billing_address; @endphp
+                            @if(is_array($addr))
+                                {{ $addr['line1'] ?? '' }}<br>
+                                {{ $addr['line2'] ?? '' }}<br>
+                                {{ $addr['city'] ?? '' }} {{ $addr['state'] ?? '' }} {{ $addr['postal_code'] ?? '' }}<br>
+                                {{ $addr['country'] ?? '' }}
+                            @endif
                         @endif
                     </div>
                 </td>
 
                 <td class="invoice-info-right">
-
                     <div class="info-row">
                         <span class="info-label">Invoice Number:</span>
-                        <span class="info-value"><strong>{{ $invoice->number }}</strong></span>
+                        <span class="info-value"><strong>{{ $invoice->number ?? $invoice->id }}</strong></span>
                     </div>
 
                     <div class="info-row">
                         <span class="info-label">Invoice Date:</span>
-                        <span class="info-value">{{ $invoice->issue_date->format('F j, Y') }}</span>
+                        <span class="info-value">{{ $invoice->formatted_issue_date ?? date('F j, Y', strtotime($invoice->issue_date)) }}</span>
                     </div>
 
                     <div class="info-row">
                         <span class="info-label">Due Date:</span>
-                        <span class="info-value">{{ $invoice->due_date->format('F j, Y') }}</span>
+                        <span class="info-value">{{ $invoice->formatted_due_date ?? ($invoice->due_date ? date('F j, Y', strtotime($invoice->due_date)) : 'N/A') }}</span>
                     </div>
 
                     <div class="info-row">
                         <span class="info-label">Status:</span>
                         <span class="info-value">
-                            <span class="status-badge status-{{ $invoice->status }}">
-                                {{ ucfirst($invoice->status) }}
+                            <span class="status-badge status-{{ $invoice->status ?? 'draft' }}">
+                                {{ ucfirst($invoice->status ?? 'draft') }}
                             </span>
                         </span>
                     </div>
 
-                    @if ($invoice->subscription)
+                    @if(!empty($subscription) && !empty($subscription->plan))
                         <div class="info-row">
                             <span class="info-label">Subscription:</span>
                             <span class="info-value">
-                                {{ $invoice->subscription->plan->name ?? 'N/A' }}
+                                {{ $subscription->plan->name ?? 'N/A' }}
                             </span>
                         </div>
                     @endif
-
                 </td>
             </tr>
         </table>
@@ -327,17 +351,17 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($invoice->line_items as $item)
+                @forelse($lineItems as $item)
                     <tr>
                         <td>{{ $item['description'] ?? 'Item' }}</td>
                         <td style="text-align: center;">{{ $item['quantity'] ?? 1 }}</td>
                         <td style="text-align: right;">
-                            {{ number_format($item['unit_price'] ?? ($item['amount'] ?? 0), 2) }}
-                            {{ $invoice->currency }}
+                            {{ number_format(floatval($item['unit_price'] ?? $item['amount'] ?? 0), 2) }}
+                            {{ $invoice->currency ?? 'USD' }}
                         </td>
                         <td style="text-align: right;">
-                            {{ number_format(($item['amount'] ?? 0) * ($item['quantity'] ?? 1), 2) }}
-                            {{ $invoice->currency }}
+                            {{ number_format(floatval(($item['amount'] ?? 0) * ($item['quantity'] ?? 1)), 2) }}
+                            {{ $invoice->currency ?? 'USD' }}
                         </td>
                     </tr>
                 @empty
@@ -353,49 +377,47 @@
             <table>
                 <tr>
                     <td class="total-label">Subtotal:</td>
-                    <td class="total-amount">{{ number_format($invoice->subtotal, 2) }} {{ $invoice->currency }}</td>
+                    <td class="total-amount">{{ number_format(floatval($invoice->subtotal ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
                 </tr>
 
-                @if (!empty($invoice->tax_rates))
-                    @foreach ($invoice->tax_rates as $tax)
+                @if(!empty($taxRates) && is_array($taxRates))
+                    @foreach($taxRates as $tax)
                         <tr>
                             <td class="total-label">{{ $tax['name'] ?? 'Tax' }} ({{ $tax['rate'] ?? 0 }}%):</td>
-                            <td class="total-amount">{{ number_format($tax['amount'] ?? 0, 2) }}
-                                {{ $invoice->currency }}</td>
+                            <td class="total-amount">{{ number_format(floatval($tax['amount'] ?? 0), 2) }}
+                                {{ $invoice->currency ?? 'USD' }}</td>
                         </tr>
                     @endforeach
                 @else
                     <tr>
                         <td class="total-label">Tax:</td>
-                        <td class="total-amount">{{ number_format($invoice->tax, 2) }} {{ $invoice->currency }}</td>
+                        <td class="total-amount">{{ number_format(floatval($invoice->tax ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
                     </tr>
                 @endif
 
-                @if (!empty($invoice->discounts))
-                    @foreach ($invoice->discounts as $discount)
-                        <tr>
-                            <td class="total-label">{{ $discount['name'] ?? 'Discount' }}:</td>
-                            <td class="total-amount">-{{ number_format($discount['amount'] ?? 0, 2) }}
-                                {{ $invoice->currency }}</td>
-                        </tr>
-                    @endforeach
+                @if(!empty($discounts) && is_array($discounts) && !empty($discounts['amount']))
+                    <tr>
+                        <td class="total-label">{{ $discounts['name'] ?? 'Discount' }}:</td>
+                        <td class="total-amount">-{{ number_format(floatval($discounts['amount'] ?? 0), 2) }}
+                            {{ $invoice->currency ?? 'USD' }}</td>
+                    </tr>
                 @endif
 
                 <tr class="grand-total">
                     <td class="total-label">Total:</td>
-                    <td class="total-amount">{{ number_format($invoice->total, 2) }} {{ $invoice->currency }}</td>
+                    <td class="total-amount">{{ number_format(floatval($invoice->total ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
                 </tr>
 
-                @if ($invoice->amount_paid > 0)
+                @if(!empty($invoice->amount_paid) && $invoice->amount_paid > 0)
                     <tr>
                         <td class="total-label">Paid:</td>
-                        <td class="total-amount">{{ number_format($invoice->amount_paid, 2) }}
-                            {{ $invoice->currency }}</td>
+                        <td class="total-amount">{{ number_format(floatval($invoice->amount_paid), 2) }}
+                            {{ $invoice->currency ?? 'USD' }}</td>
                     </tr>
                     <tr>
                         <td class="total-label">Balance Due:</td>
-                        <td class="total-amount">{{ number_format($invoice->amount_due, 2) }} {{ $invoice->currency }}
-                        </td>
+                        <td class="total-amount">{{ number_format(floatval($invoice->amount_due ?? ($invoice->total - $invoice->amount_paid)), 2) }}
+                            {{ $invoice->currency ?? 'USD' }}</td>
                     </tr>
                 @endif
             </table>
@@ -413,7 +435,7 @@
         </div>
 
         <!-- Notes -->
-        @if (isset($invoice->metadata['notes']))
+        @if(!empty($invoice->metadata) && is_array($invoice->metadata) && !empty($invoice->metadata['notes']))
             <div class="notes">
                 <strong>Notes:</strong><br>
                 {{ $invoice->metadata['notes'] }}

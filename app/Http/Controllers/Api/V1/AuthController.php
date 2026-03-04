@@ -41,13 +41,13 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $this->authService->logout($request->user());
-        return ApiResponse::success(null, 'Logged out successfully');
+        return success('Logged out successfully');
     }
 
     public function user(Request $request)
     {
-        $user = $this->authService->currentUser($request->user())->load(['company', 'branch']);
-        return ApiResponse::success(new UserResource($user), 'Current user fetched successfully');
+        $user = $this->authService->currentUser($request->user());
+        return success('Current user fetched successfully', new UserResource($user), 200);
     }
 
     public function updateProfile(Request $request)
@@ -89,8 +89,8 @@ class AuthController extends Controller
             $user->update($data);
         }
 
-        $user = $user->fresh()->load(['company', 'branch']);
+        $user = $user->fresh();
 
-        return ApiResponse::success(new UserResource($user), 'Profile updated successfully');
+        return success('Profile updated successfully', new UserResource($user), 200);
     }
 }

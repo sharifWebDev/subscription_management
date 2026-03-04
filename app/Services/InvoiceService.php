@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use PDF;
 
 class InvoiceService
@@ -329,46 +330,98 @@ class InvoiceService
     /**
      * Generate invoice PDF and return as download response
      */
-    public function downloadPdf(int $invoiceId)
-    {
-        try {
-            $invoice = Invoice::with(['user', 'subscription.plan', 'subscription.price'])->findOrFail($invoiceId);
+  public function downloadPdf(int $invoiceId)
+{
+    try {
+        $invoice = Invoice::with(['user', 'subscription.plan', 'subscription.price'])->findOrFail($invoiceId);
 
-            // Parse JSON data
-            $invoice->line_items = json_decode($invoice->line_items, true) ?? [];
-            $invoice->tax_rates = json_decode($invoice->tax_rates, true) ?? [];
-            $invoice->discounts = json_decode($invoice->discounts, true) ?? [];
+        if (! $invoice) {
 
-            // Get company settings
-            $company = [
-                'name' => config('app.name'),
-                'email' => config('app.email', 'billing@example.com'),
-                'phone' => config('app.phone', '+1 (555) 123-4567'),
-                'address' => config('app.address', '123 Business St, Suite 100'),
-                'city' => config('app.city', 'New York'),
-                'state' => config('app.state', 'NY'),
-                'zip' => config('app.zip', '10001'),
-                'country' => config('app.country', 'USA'),
-                'logo' => public_path('images/logo.png'),
-                'tax_id' => config('app.tax_id', 'TAX-123456'),
-            ];
-
-            // Generate PDF for download
-            $pdf = PDF::loadView('pdf.invoice', [
-                'invoice' => $invoice,
-                'company' => $company,
-            ]);
-
-            $filename = 'invoice-'.$invoice->number.'.pdf';
-
-            return $pdf->download($filename);
-
-        } catch (Exception $e) {
-            Log::error('Failed to download invoice PDF: '.$e->getMessage());
-            throw new Exception('Failed to download invoice PDF'.$e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Invoice not found',
+            ], 404);
         }
-    }
 
+        // Parse JSON data
+        $invoice->line_items = json_decode($invoice->line_items, true) ?? [];
+        $invoice->tax_rates = json_decode($invoice->tax_rates, true) ?? [];
+        $invoice->discounts = json_decode($invoice->discounts, true) ?? [];
+
+        // Calculate amounts if not present
+        if (!isset($invoice->subtotal)) {
+            $invoice->subtotal = $invoice->total - ($invoice->tax ?? 0);
+        }
+
+        // Get company settings
+        $company = [
+            'name' => config('app.name', 'Your Company'),
+            'email' => config('mail.from.address', 'billing@example.com'),
+            'phone' => config('app.phone', '+1 (555) 123-4567'),
+            'address' => config('app.address', '123 Business St, Suite 100'),
+            'city' => config('app.city', 'New York'),
+            'state' => config('app.state', 'NY'),
+            'zip' => config('app.zip', '10001'),
+            'country' => config('app.country', 'USA'),
+            'logo' => file_exists(public_path('images/logo.png')) ? public_path('images/logo.png') : null,
+            'tax_id' => config('app.tax_id', 'TAX-123456'),
+        ];
+
+        // Get user billing address
+        $user = $invoice->user;
+        $billingAddress = $user->billing_address ?? [];
+
+        // Prepare data for view
+        $data = [
+            'invoice' => $invoice,
+            'company' => $company,
+            'user' => $user,
+            'billingAddress' => $billingAddress,
+            'lineItems' => $invoice->line_items,
+            'taxRates' => $invoice->tax_rates,
+            'discounts' => $invoice->discounts,
+            'subscription' => $invoice->subscription,
+        ];
+
+        // Generate PDF
+        $pdf = PDF::loadView('pdf.invoice', $data, [
+            'format' => 'A4',
+            'default_font_size' => 12,
+            'default_font' => 'dejavusans',
+            'margin_left' => 15,
+            'margin_right' => 15,
+            'margin_top' => 16,
+            'margin_bottom' => 16,
+            'margin_header' => 9,
+            'margin_footer' => 9,
+        ]);
+
+        $filename = 'invoice-' . ($invoice->number ?? $invoice->id) . '.pdf';
+
+        $pdfContent = $pdf->output();
+
+            // Save PDF to storage
+            $pdfUrl = $this->savePdfToStorage($invoice, $pdfContent);
+
+            $invoice->update(['pdf_url' => $pdfUrl]);
+
+            return response($pdfContent, 200)
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'attachment; filename="'.$filename.'"');
+
+
+    } catch (\Exception $e) {
+        \Log::error('Failed to download invoice PDF: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'invoice_id' => $invoiceId
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to download invoice PDF: ' . $e->getMessage()
+        ], 500);
+    }
+}
     /**
      * Get user invoices
      */
