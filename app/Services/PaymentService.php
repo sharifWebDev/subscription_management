@@ -868,6 +868,38 @@ class PaymentService
         return PaymentMethod::create($data)->toArray();
     }
 
+    public function setDefault(int $id)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthenticated.'
+            ], 401);
+        }
+
+        // Find payment method for this user only
+        $paymentMethod = PaymentMethod::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$paymentMethod) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment method not found.'
+            ], 404);
+        }
+
+        // Remove existing default
+        PaymentMethod::where('user_id', $user->id)
+            ->where('is_default', true)
+            ->update(['is_default' => false]);
+
+        // Set new default
+        $paymentMethod->update(['is_default' => true]);
+    }
+
     // removeMethod
     public function removeMethod(int $id)
     {

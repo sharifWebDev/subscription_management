@@ -203,6 +203,11 @@ class PaymentController extends Controller
         return success('Methods added successfully', $this->paymentService->addMethod($data));
     }
 
+    public function setDefault(int $id): JsonResponse
+    {
+        return success('Methods added successfully', $this->paymentService->setDefault($id),  200);
+    }
+
     // removeMethod
     public function removeMethod(int $id): JsonResponse
     {
