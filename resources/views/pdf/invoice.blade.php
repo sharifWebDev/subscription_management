@@ -141,23 +141,31 @@
             color: white;
         }
 
+        .status-completed {
+            background-color: #28a745;
+            color: white;
+        }
+
         .table {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
+            border: 1px solid #e5e7eb;
         }
 
         .table th {
-            background-color: #0d6efd;
-            color: white;
+            background-color: #f9fafb;
+            color: #374151;
             padding: 12px;
             text-align: left;
             font-size: 12px;
+            font-weight: 600;
+            border-bottom: 2px solid #e5e7eb;
         }
 
         .table td {
             padding: 10px 12px;
-            border-bottom: 1px solid #ddd;
+            border-bottom: 1px solid #e5e7eb;
         }
 
         .table .item-description {
@@ -179,36 +187,96 @@
             text-align: right;
         }
 
-        .totals {
+        /* Tax and Totals Grid Layout - Matching View Modal */
+        .totals-grid {
             margin-top: 30px;
-            text-align: right;
-        }
-
-        .totals table {
+            display: table;
             width: 100%;
-            max-width: 400px;
-            margin-left: auto;
             border-collapse: collapse;
         }
 
-        .totals td {
-            padding: 5px 10px;
+        .totals-row {
+            display: table-row;
         }
 
-        .totals .total-label {
-            font-weight: bold;
+        .totals-left {
+            display: table-cell;
+            width: 50%;
+            padding-right: 15px;
+            vertical-align: top;
+        }
+
+        .totals-right {
+            display: table-cell;
+            width: 50%;
+            padding-left: 15px;
+            vertical-align: top;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 5px;
+        }
+
+        .tax-table, .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .tax-table td, .summary-table td {
+            padding: 5px 0;
+        }
+
+        .tax-table .tax-name {
+            color: #6b7280;
+        }
+
+        .tax-table .tax-rate {
+            text-align: right;
+            color: #6b7280;
+            padding-right: 10px;
+        }
+
+        .tax-table .tax-amount {
+            text-align: right;
+            color: #111827;
+            font-weight: 500;
+        }
+
+        .summary-table .summary-label {
+            color: #6b7280;
             text-align: left;
         }
 
-        .totals .total-amount {
+        .summary-table .summary-value {
             text-align: right;
+            color: #111827;
+            font-weight: 500;
         }
 
-        .grand-total {
-            font-size: 16px;
-            font-weight: bold;
-            color: #0d6efd;
-            border-top: 2px solid #0d6efd;
+        .summary-table .total-row {
+            font-weight: 700;
+            border-top: 2px solid #e5e7eb;
+        }
+
+        .summary-table .total-row td {
+            padding-top: 8px;
+            color: #2563eb;
+            font-size: 14px;
+        }
+
+        .summary-table .paid-row td {
+            color: #10b981;
+        }
+
+        .summary-table .due-row td {
+            color: #ef4444;
+            font-weight: 700;
         }
 
         .payment-info {
@@ -372,55 +440,80 @@
             </tbody>
         </table>
 
-        <!-- Totals -->
-        <div class="totals">
-            <table>
-                <tr>
-                    <td class="total-label">Subtotal:</td>
-                    <td class="total-amount">{{ number_format(floatval($invoice->subtotal ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
-                </tr>
+        <!-- Tax and Totals Grid - Matching View Modal Layout -->
+        <div class="totals-grid">
+            <div class="totals-row">
+                <!-- Left Column - Tax Information -->
+                <div class="totals-left">
+                    <div class="section-title">Tax Information</div>
+                    <table class="tax-table">
+                        @if(!empty($taxRates) && is_array($taxRates))
+                            @if(isset($taxRates['name']))  {{-- Single tax rate as object --}}
+                                <tr>
+                                    <td class="tax-name">{{ $taxRates['name'] ?? 'Tax' }}</td>
+                                    <td class="tax-rate">{{ $taxRates['rate'] ?? 0 }}%</td>
+                                    <td class="tax-amount">{{ number_format(floatval($taxRates['amount'] ?? $invoice->tax ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
+                                </tr>
+                            @else  {{-- Multiple tax rates as array --}}
+                                @foreach($taxRates as $tax)
+                                    <tr>
+                                        <td class="tax-name">{{ $tax['name'] ?? 'Tax' }}</td>
+                                        <td class="tax-rate">{{ $tax['rate'] ?? 0 }}%</td>
+                                        <td class="tax-amount">{{ number_format(floatval($tax['amount'] ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
+                                    </tr>
+                                @endforeach
+                            @endif
+                        @elseif($invoice->tax > 0)
+                            <tr>
+                                <td class="tax-name">Tax</td>
+                                <td class="tax-rate">-</td>
+                                <td class="tax-amount">{{ number_format(floatval($invoice->tax), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
+                            </tr>
+                        @else
+                            <tr>
+                                <td colspan="3" style="color: #9ca3af; text-align: center;">No tax information</td>
+                            </tr>
+                        @endif
+                    </table>
+                </div>
 
-                @if(!empty($taxRates) && is_array($taxRates))
-                    @foreach($taxRates as $tax)
+                <!-- Right Column - Summary Totals -->
+                <div class="totals-right">
+                    <div class="section-title">Summary</div>
+                    <table class="summary-table">
                         <tr>
-                            <td class="total-label">{{ $tax['name'] ?? 'Tax' }} ({{ $tax['rate'] ?? 0 }}%):</td>
-                            <td class="total-amount">{{ number_format(floatval($tax['amount'] ?? 0), 2) }}
-                                {{ $invoice->currency ?? 'USD' }}</td>
+                            <td class="summary-label">Subtotal:</td>
+                            <td class="summary-value">{{ number_format(floatval($invoice->subtotal ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
                         </tr>
-                    @endforeach
-                @else
-                    <tr>
-                        <td class="total-label">Tax:</td>
-                        <td class="total-amount">{{ number_format(floatval($invoice->tax ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
-                    </tr>
-                @endif
+                        <tr>
+                            <td class="summary-label">Tax:</td>
+                            <td class="summary-value">{{ number_format(floatval($invoice->tax ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
+                        </tr>
 
-                @if(!empty($discounts) && is_array($discounts) && !empty($discounts['amount']))
-                    <tr>
-                        <td class="total-label">{{ $discounts['name'] ?? 'Discount' }}:</td>
-                        <td class="total-amount">-{{ number_format(floatval($discounts['amount'] ?? 0), 2) }}
-                            {{ $invoice->currency ?? 'USD' }}</td>
-                    </tr>
-                @endif
+                        @if(!empty($discounts) && is_array($discounts) && !empty($discounts['amount']))
+                            <tr>
+                                <td class="summary-label">{{ $discounts['name'] ?? 'Discount' }}:</td>
+                                <td class="summary-value" style="color: #10b981;">-{{ number_format(floatval($discounts['amount'] ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
+                            </tr>
+                        @endif
 
-                <tr class="grand-total">
-                    <td class="total-label">Total:</td>
-                    <td class="total-amount">{{ number_format(floatval($invoice->total ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
-                </tr>
+                        <tr class="total-row">
+                            <td class="summary-label">Total:</td>
+                            <td class="summary-value" style="color: #2563eb;">{{ number_format(floatval($invoice->total ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
+                        </tr>
 
-                @if(!empty($invoice->amount_paid) && $invoice->amount_paid > 0)
-                    <tr>
-                        <td class="total-label">Paid:</td>
-                        <td class="total-amount">{{ number_format(floatval($invoice->amount_paid), 2) }}
-                            {{ $invoice->currency ?? 'USD' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="total-label">Balance Due:</td>
-                        <td class="total-amount">{{ number_format(floatval($invoice->amount_due ?? ($invoice->total - $invoice->amount_paid)), 2) }}
-                            {{ $invoice->currency ?? 'USD' }}</td>
-                    </tr>
-                @endif
-            </table>
+                        <!-- Paid and Balance Due - Always displayed -->
+                        <tr class="paid-row">
+                            <td class="summary-label">Paid:</td>
+                            <td class="summary-value">{{ number_format(floatval($invoice->amount_paid ?? 0), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
+                        </tr>
+                        <tr class="due-row">
+                            <td class="summary-label">Balance Due:</td>
+                            <td class="summary-value">{{ number_format(floatval($invoice->amount_due ?? ($invoice->total - ($invoice->amount_paid ?? 0))), 2) }} {{ $invoice->currency ?? 'USD' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- Payment Information -->

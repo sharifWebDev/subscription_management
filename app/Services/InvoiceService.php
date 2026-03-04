@@ -336,7 +336,6 @@ class InvoiceService
         $invoice = Invoice::with(['user', 'subscription.plan', 'subscription.price'])->findOrFail($invoiceId);
 
         if (! $invoice) {
-
             return response()->json([
                 'success' => false,
                 'message' => 'Invoice not found',
