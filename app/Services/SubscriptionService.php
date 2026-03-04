@@ -22,6 +22,7 @@ use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -38,6 +39,7 @@ class SubscriptionService
         $length = $request->input('length', 10);
         $search = $request->input('search');
         $status = $request->input('status');
+        $user_type = $request->input('user_type');
         $fromDate = $request->input('from_date');
         $toDate = $request->input('to_date');
 
@@ -101,6 +103,9 @@ class SubscriptionService
             })
             ->when($status, function ($q) use ($status) {
                 $q->where('status', $status);
+            })
+            ->when($user_type == 'customer', function ($q) use ($user_type) {
+                $q->where('user_id', Auth::user()->id);
             });
 
         $query->orderBy($sortColumn, $sortDirection);
