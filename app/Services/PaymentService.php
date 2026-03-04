@@ -851,11 +851,11 @@ class PaymentService
     }
 
     // getMethods
-    public function getMethods(): array
+    public function getMethods()
     {
         $auth = auth()->user();
 
-        return PaymentMethod::where('user_id', $auth->id)->get()->toArray();
+        return PaymentMethod::where('user_id', $auth->id)->get();
     }
 
     // addMethod

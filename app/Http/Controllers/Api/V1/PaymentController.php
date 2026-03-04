@@ -6,6 +6,8 @@ use App\Dtos\PaymentDto;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePaymentRequest;
 use App\Http\Requests\UpdatePaymentRequest;
+use App\Http\Resources\CustomerPaymentMethodResource;
+use App\Http\Resources\PaymentMethodResource;
 use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use App\Services\PaymentService;
@@ -190,7 +192,7 @@ class PaymentController extends Controller
     // getMethods
     public function getMethods(): JsonResponse
     {
-        return success('Methods retrieved successfully', $this->paymentService->getMethods());
+        return success('Payment methods retrieved successfully', CustomerPaymentMethodResource::collection($this->paymentService->getMethods()), 200);
     }
 
     // addMethod
