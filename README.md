@@ -707,3 +707,42 @@ class CrudGeneratorController extends Controller
 7. **API সাপোর্ট** - JSON রেসপন্স সহ API রিকোয়েস্ট সাপোর্ট
 
 এই মিডলওয়্যার সম্পূর্ণ ডাটাবেজ স্ট্রাকচারের সাথে সামঞ্জস্যপূর্ণ এবং CRUD জেনারেটর বা অন্যান্য ফিচার প্রোটেক্ট করতে ব্যবহার করতে পারবেন।
+
+
+
+### UI:
+
+## Subscriptions Plan:
+
+![alt text](subs-plan.png)
+
+## Plan Details:
+
+![alt text](<plan details.png>)
+
+## checkout plan
+
+![alt text](checkout-plan.png)
+
+![alt text](checkout-plan-bank.png.png)
+
+
+## Dashboard
+![alt text](127.0.0.1_8000_dashboard_dashboard.png)
+
+## My subscriptions
+
+![alt text](<my subscriptions.png>)
+## Invoice
+
+![alt text](Invoice.png)
+## order invoice
+![alt text](<Screenshot from 2026-03-05 20-06-28.png>)
+## Usages 
+![alt text](127.0.0.1_8000_dashboard_usage.png)
+
+
+
+
+
+

@@ -166,7 +166,7 @@
             })
             .then(response => {
                 // Handle different response structures
-                plans = response.data?.data || response.data || [];
+                plans = response.data?.data?.data || response.data || [];
 
                 // Make sure plans is an array
                 if (!Array.isArray(plans)) {

@@ -193,7 +193,7 @@
         function fetchPlanDetails() {
             axios.get(`/subscription-plans/${slug}`)
                 .then(response => {
-                    planData = response.data.data;
+                    planData = response.data?.data;
                     renderPlanDetails();
 
                     // Fetch recommended plans
@@ -207,7 +207,7 @@
                     });
                 })
                 .then(response => {
-                    renderRecommendedPlans(response.data.data || []);
+                    renderRecommendedPlans(response.data?.data?.data || []);
 
                     $('#planLoader').hide();
                     $('#planContent').show();
@@ -234,7 +234,7 @@
 
         function renderPlanDetails() {
             // Update breadcrumb
-            $('#planBreadcrumb').text(planData.name);
+            $('#planBreadcrumb').text(planData?.name ?? '');
 
             // Featured badge
             if (planData.is_featured) {
@@ -242,7 +242,7 @@
             }
 
             // Basic info
-            $('#planName').text(planData.name);
+            $('#planName').text(planData?.name ?? '');
             $('#planDescription').text(planData.description || 'No description available');
 
             // Plan type badge
